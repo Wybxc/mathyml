@@ -15,6 +15,10 @@
 #let _to-mathml(
   inner,
 ) = {
+  let rec(inner, size: none, allow-multi-return: false) = {
+    if size == none { size = "display" }
+    _to-mathml(inner, size: size, allow-multi-return: allow-multi-return)
+  }
   let elem = html.elem
   if type(inner) == array {
     if inner.len() == 1 {
@@ -24,7 +28,9 @@
   if type(inner) == content {
     let func = inner.func()
     if func == math.equation {
-      _to-mathml(inner.body)
+      rec(inner.body)
+    } else if func == html.elem {
+      return inner // nothing to do
     } else if func == types.sequence {
       // TODO remove this hack
       // group children until whitespace
@@ -52,7 +58,7 @@
           ungrouped.push(_to-mathml(child))
         }
       }
-      // let children = inner.children.map(_to-mathml).join()
+      // let children = inner.children.map(rec).join()
       if ungrouped.len() > 0 {
         children.push(convert-ungrouped(ungrouped))
       }
@@ -94,29 +100,30 @@
         assert.eq(inner.size, 100%, 0pt) // TODO support different sizes
       }
       return _to-mathml(inner.body)
+      return rec(inner.body) // FIXME: is this correct?
     } else if func == math.frac {
       elem("mfrac")[
-        #_to-mathml(inner.num)
-        #_to-mathml(inner.denom)
+        #rec(inner.num)
+        #rec(inner.denom)
       ]
     } else if func == math.root {
       if inner.has("index") {
         elem("mroot")[
-          #_to-mathml(inner.radicand)
           #_to-mathml(inner.index)
+          #rec(inner.radicand)
         ]
       } else {
-        elem("msqrt", _to-mathml(inner.radicand))
+        elem("msqrt", rec(inner.radicand))
       }
     } else if func == math.binom {
-      let lower = inner.lower.map(v => _to-mathml(v)).join(elem("mo", ","))
+      let lower = inner.lower.map(v => rec(v)).join(elem("mo", ","))
       if inner.lower.len() > 1 {
         lower = elem("mrow", lower)
       }
       elem("mrow")[
         #elem("mo", "(")
         #elem("mfrac", attrs: (linethickness: "0"))[
-          #_to-mathml(inner.upper)
+          #rec(inner.upper)
           #lower
         ]
         #elem("mo", ")")
@@ -185,7 +192,7 @@
       if inner.has("gap") and inner.gap != 0% + 0.2em {
         attrs.insert("rowspacing", convert-relative-len(inner.gap, inner))
       }
-      let children = inner.children.map(v => elem("mtr", elem("mtd", _to-mathml(v))))
+      let children = inner.children.map(v => elem("mtr", elem("mtd", rec(v))))
       let table = elem("mtable", attrs: attrs, children.join())
       let (left, right) = if not inner.has("delim") {
         ("(", ")")
@@ -231,7 +238,7 @@
 
       let children = inner.rows.map(row =>
         elem("mtr", row.map(v =>
-          elem("mtd", _to-mathml(v))
+          elem("mtd", rec(v))
         ).join())
       )
       let table = elem("mtable", attrs: attrs, children.join())
@@ -294,7 +301,7 @@
         (elem("mo", delim), none)
       }
 
-      let children = inner.children.map(v => elem("mtr", elem("mtd", _to-mathml(v))))
+      let children = inner.children.map(v => elem("mtr", elem("mtd", rec(v))))
       let table = elem("mtable", attrs: attrs, children.join())
 
       elem("mrow")[
@@ -311,13 +318,13 @@
         else if func == math.overshell { "⏠" }
         else { panic(inner) }
       let res = elem("mover", attrs: (accent: "true"))[ // TODO `accent` attribute?
-        #_to-mathml(inner.body)
+        #rec(inner.body)
         #elem("mo", symb)
       ]
       if inner.has("annotation") and inner.annotation != none {
         elem("mover")[
           #res
-          #_to-mathml(inner.annotation)
+          #rec(inner.annotation)
         ]
       } else {
         res
@@ -331,13 +338,13 @@
         else if func == math.undershell { "⏡" }
         else { panic(inner) }
       let res = elem("munder", attrs: (accent: "true"))[ // TODO `accent` attribute?
-        #_to-mathml(inner.body)
+        #rec(inner.body)
         #elem("mo", symb)
       ]
       if inner.has("annotation") and inner.annotation != none {
         elem("munder")[
           #res
-          #_to-mathml(inner.annotation)
+          #rec(inner.annotation)
         ]
       } else {
         res
@@ -346,7 +353,7 @@
       if inner.has("size") {
         assert.eq(inner.size, 100% + 0pt)
       }
-      let base = _to-mathml(inner.base)
+      let base = rec(inner.base)
       // TODO improve this
       elem("mover", attrs: (accent: "true"))[
         #base
@@ -354,10 +361,10 @@
       ]
     } else if func == math.class {
       let class = inner.class
-      // TODO convert `inner.body` in all cases with `_to-mathml`?
+      // TODO convert `inner.body` in all cases with `rec`?
       let body = inner.body
       if class == "normal" or class == "vary" {
-        _to-mathml(inner.body)
+        rec(inner.body)
       } else if class == "punctuation" {
         elem("mo", attrs: (separator: "true"), body)
       } else if class == "opening" or class == "closing" or class == "fence" {
@@ -391,11 +398,10 @@
       if inner.has("size") and inner.size != 100% + 0pt {
         attrs.insert("minsize", convert-relative-len(inner.size, inner)) // FIXME: this is likely wrong
       }
-      elem("mo", attrs: attrs, _to-mathml(inner.body))
+      elem("mo", attrs: attrs, rec(inner.body))
     } else if func == types.counter-update {
       inner
     } else {
-      panic(func, types.counter-update)
       panic("unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }
   } else {
