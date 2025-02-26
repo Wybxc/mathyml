@@ -1,8 +1,48 @@
-#import "utils.typ": types, convert-relative-len
+#import "utils.typ" as utils: types, convert-relative-len
+#import "unicode.typ"
+
+#let _has-limits(base, size) = {
+  if type(base) == content {
+    let func2 = base.func()
+    if func2 == math.limits {
+      base = base.body
+      true
+    } else if func2 == math.scripts {
+      base = base.body
+      false
+    } else if func2 == math.op {
+      if base.has("limits") {
+        base.limits
+      } else {
+        false
+      }
+    } else if func2 == math.class {
+      let class = unicode._limits_for_class(base.class)
+      if class == "always" { true }
+        else if class == "display" { size == "display" }
+        else { false }
+    } else if func2 == types.symbol {
+      let class = unicode._limits-for-char(base.text)
+      if class == "always" { true }
+        else if class == "display" { size == "display" }
+        else { false }
+    } else if func2 == math.lr {
+      false
+    } else if func2 == math.stretch {
+      _has-limits(base.body, size)
+    } else {
+      // FIXME remove this panic
+      panic("cannot determine limits for content elem of type `" + repr(func2) + "`: " + repr(base))
+      false
+    }
+  } else {
+    // FIXME remove this panic
+    panic("cannot determine limits for elem of type `" + repr(type(base)) + "`: " + repr(base))
+  }
+}
 
 // TODO
 // wrong:
-// - `attach` for sum etc
 // - `math.stretch`
 // unsupported:
 // - `math.cancel`
@@ -14,6 +54,8 @@
 // - labels
 #let _to-mathml(
   inner,
+  /// -> "script-script" | "script" | "text" | "display"
+  size: "display",
 ) = {
   let rec(inner, size: none, allow-multi-return: false) = {
     if size == none { size = "display" }
@@ -84,9 +126,6 @@
       // TODO is this correct?
       elem("mo", inner)
     } else if func == math.op {
-      if inner.has("limits") and inner.limits {
-        panic("`limits` for `math.op` are not supported yet", inner)
-      }
       elem("mi", inner.text)
     } else if func == types.space {
       assert.eq(inner.fields(), (:)) // TODO remove
@@ -109,8 +148,8 @@
     } else if func == math.root {
       if inner.has("index") {
         elem("mroot")[
-          #_to-mathml(inner.index)
           #rec(inner.radicand)
+          #rec(inner.index, size: "script-script")
         ]
       } else {
         elem("msqrt", rec(inner.radicand))
@@ -129,40 +168,66 @@
         #elem("mo", ")")
       ]
     } else if func == math.attach {
-      // TODO
-      // if inner.base.func() == types.symbol and inner.base.text != "x" {
-      //   panic(inner)
-      // }
-      let base = _to-mathml(inner.base)
       let (tr, br, tl, bl, t, b) = ("tr", "br", "tl", "bl", "t", "b").map(name => inner.at(name, default: none))
-      if t != none {
-        if tr == none {
-          tr = t // TODO improve this
-        } else {
-          panic(inner)
+
+      let base = inner.base
+      while type(base) == content and base.func() == math.attach {
+        base = base.base
+      }
+      let limits = _has-limits(base, size)
+      let size = if size == "display" or size == "text" {
+        "script"
+      } else {
+        assert(("script", "script-script").contains(size))
+        "script-script"
+      }
+      // no need to process `limits` and `scripts` below
+      if type(base) == content {
+        if base.func() == math.limits {
+          base = base.body
+          assert(limits)
+        } else if base.func() == math.scripts {
+          base = base.body
+          assert(not limits)
         }
       }
-      if b != none {
-        if br == none {
-          br = b // TODO improve this
+
+      // see <https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/attach.rs#L46>
+      let primed = type(base) == content and base.func() == math.primes
+      let (t, tr) = if t != none and tr != none and primed and not limits {
+        (none, tr + t)
+      } else if t != none and tr == none and not limits {
+        (none, t)
+      } else {
+        (t, tr)
+      }
+      let (b, br) = if limits or br != none {
+        (b, br)
+      } else {
+        (none, b)
+      }
+
+      let base = rec(base)
+      let (b, br, bl, t, tr, tl) = (b, br, bl, t, tr, tl).map(v => {
+        if v == none {
+          none
         } else {
-          panic(inner)
+          rec(v, size: size)
         }
-      }
-      if tr == none and br == none and bl == none and tl == none {
-        return base
-      }
-      if tl == none and bl == none { // only right
-        if tr == none {
-          elem("msub")[#base #_to-mathml(br)]
-        } else if br == none {
-          elem("msup")[#base #_to-mathml(tr)]
+      })
+      let base = if tl == none and bl == none { // only right
+        if br != none and tr != none {
+          elem("msubsup")[#base #br #tr]
+        } else if br != none {
+          elem("msub")[#base #br]
+        } else if tr != none {
+          elem("msup")[#base #tr]
         } else {
-          elem("msubsup")[#base #_to-mathml(br) #_to-mathml(tr)]
+          base
         }
       } else { // with left
         let maybe(it) = if it != none {
-          _to-mathml(it)
+          it
         } else {
           elem("mrow")
         }
@@ -176,6 +241,27 @@
           #maybe(bl)
           #maybe(tl)
         ]
+      }
+      if t != none and b != none {
+        elem("munderover")[
+          #base
+          #b
+          #t
+        ]
+      } else if t != none {
+        elem("mover")[
+          #base
+          #t
+        ]
+      } else if b != none {
+        // FIXME add `accent`?
+        // elem("munder", attrs: (accent: "true"))[
+        elem("munder")[
+          #base
+          #b
+        ]
+      } else {
+        base
       }
     } else if func == math.vec { context {
       let attrs = (:)
