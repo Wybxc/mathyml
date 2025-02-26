@@ -44,18 +44,22 @@
 // TODO
 // wrong:
 // - `math.stretch`
-// unsupported:
-// - `math.cancel`
-// - `math.limits`
-// - `math.scripts`
-// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript`
-// - `math.styles`: upright, italic, bold
-// - variants: `math.frak` etc.
-// - labels
+// - `lr` size
+
+/// ==== Unsupported
+/// - `math.cancel`
+/// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript`
+/// - `math.styles`: upright, italic, bold
+/// - labels
+/// ==== Papercuts
+/// - variants: `math.frak` (works with prelude but not automatically)
+/// - `vec` and `mat` align and gap only work in firefox.
+///
 #let _to-mathml(
   inner,
   /// -> "script-script" | "script" | "text" | "display"
   size: "display",
+  allow-multi-return: false, // FIXME: use this more
 ) = {
   let rec(inner, size: none, allow-multi-return: false) = {
     if size == none { size = "display" }
@@ -97,7 +101,12 @@
           children.push(convert-ungrouped(ungrouped))
           ungrouped = ()
         } else {
-          ungrouped.push(_to-mathml(child))
+          let r = rec(child, allow-multi-return: true)
+          if type(r) == array {
+            ungrouped += r
+          } else {
+            ungrouped.push(r)
+          }
         }
       }
       // let children = inner.children.map(rec).join()
@@ -106,6 +115,9 @@
       }
       if children.len() == 1 {
         return children.first() // FIXME is this ok?
+      }
+      if allow-multi-return {
+        return children
       }
       elem("mrow", children.join())
     } else if func == text {
@@ -138,7 +150,27 @@
       if inner.has("size") {
         assert.eq(inner.size, 100%, 0pt) // TODO support different sizes
       }
-      return _to-mathml(inner.body)
+      if type(inner.body) == content and inner.body.func() == types.sequence {
+        let children = inner.body.children
+        // remove the left and right delimiter
+        let left = rec(children.remove(0))
+        let right = rec(children.pop())
+        let children = rec(children.join(), allow-multi-return: true)
+        if allow-multi-return {
+          if type(children) == array {
+            return (left, ..children, right)
+          }
+          return (left, children, right)
+        }
+        if type(children) == array {
+          children = children.join()
+        }
+        return elem("mrow")[
+          #left
+          #children
+          #right
+        ]
+      }
       return rec(inner.body) // FIXME: is this correct?
     } else if func == math.frac {
       elem("mfrac")[
@@ -449,6 +481,19 @@
       let class = inner.class
       // TODO convert `inner.body` in all cases with `rec`?
       let body = inner.body
+
+      // FIXME is this ok?
+      if type(body) == content and body.func() == text and body.text.len() > 1 {
+        return elem("mi", body.text)
+      }
+      if type(body) == str and body.len() > 1 {
+        return elem("mi", body)
+      }
+      if not (type(body) == content and body.func() == types.symbol
+      ) {
+        return elem("mi", rec(inner.body))
+      }
+
       if class == "normal" or class == "vary" {
         rec(inner.body)
       } else if class == "punctuation" {
