@@ -1,5 +1,7 @@
 #import "utils.typ": types
 
+#let _matches(c, regex) = c.find(regex) != none
+
 // See https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/text.rs#L185
 #let _styled-char(
   /// -> str
@@ -15,7 +17,7 @@
   if c.clusters().len() != 1 {
     panic("expected a single character but got " + c.clusters().len() + ": " + c)
   }
-  let matches(regex) = c.find(regex) != none
+  let matches = _matches.with(c)
   let italic = if italic == auto {
     (auto-italic
       and matches(regex("[a-zħıȷA-Zα-ω∂ϵϑϰϕϱϖ]"))
@@ -219,3 +221,107 @@
 #let mono = convert_variants.with(variant: "mono")
 #let bb = convert_variants.with(variant: "bb")
 #let cal = convert_variants.with(variant: "cal")
+
+/// see <https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-utils/src/lib.rs#L345>
+/// for most unicode values only `large` and `relation` will be correct.
+#let _default-math-class(
+  c
+) = {
+  if c.clusters().len() != 1 {
+    panic("expected a single character but got " + c.clusters().len() + ": " + c)
+  }
+  if c == ":" {
+    "relation"
+  } else if c == "⋯" or c == "⋱" or c == "⋰" or c == "⋮" {
+    "normal"
+  } else if c == "." or c == "/" {
+    "normal"
+  } else if c == "\u{22A5}" { // UP TACK
+    "normal"
+  } else if c == "⅋" {
+    "binary"
+  } else if c == "⎰" or c == "⟅" {
+    "opening"
+  } else if c == "⎱" or c == "⟆" {
+    "closing"
+  } else if c == "⟇" {
+    "binary"
+  } else {
+    // see https://www.unicode.org/Public/math/revision-15/MathClass-15.txt
+    let cp = c.to-unicode()
+    if (0x0606,0x0607,0x2140,0x220F,0x2210,0x2211,0x221A,0x221B,0x221C,0x222B,0x222C,0x222D,0x222E,0x222F,0x2230,0x2231,0x2232,0x2233,0x22C0,0x22C1,0x22C2,0x22C3,0x27CC,0x27D5,0x27D6,0x27D7,0x27D8,0x27D9,0x29F8,0x29F9,0x2AFC,0x2AFF,0x1EEF0,0x1EEF1).contains(cp) {
+      "large"
+    } else if 0x2A00 <= cp and cp <= 0x2A21 {
+      "large"
+    } else if (0x3C,0x3D,0x3E,0x2020,0x2021,0x204F,0x2050,0x221D,0x22A2,0x22A3,0x22C8,0x22CD,0x22D0,0x22D1,0x2322,0x2323,0x23b0,0x23b1,0x27CD,0x27d2,0x27d3,0x27d4,0x29DF,0x29E1,0x29F4,0x2A59,0xAF2,0xAF3,0x2B95).contains(cp) {
+      "relation"
+    } else {
+      for (start, end) in (
+        (0x2190,0x21B3),
+        (0x21BA,0x21FF),
+        (0x2208,0x220D),
+        (0x2223,0x2226),
+        (0x2234,0x2237),
+        (0x2239,0x223D),
+        (0x2241,0x228B),
+        (0x228F,0x2292),
+        (0x22A5,0x22B8),
+        (0x22D4,0x22FF),
+        (0x233F,0x237C),
+        (0x27C2,0x27CB),
+        (0x27DA,0x27DF),
+        (0x27F0,0x297F),
+        (0x29CE,0x29D5),
+        (0x29E3,0x29E6),
+        (0x2A66,0x2A70),
+        (0x2A73,0x2AE0),
+        (0x2AE2,0x2AF0),
+        (0x2AF7,0x2AFA),
+        (0x2B00,0x2B11),
+        (0x2B30,0x2B44),
+        (0x2B47,0x2B4C),
+      ) {
+        if start <= cp and cp <= end {
+          return "relation"
+        }
+      }
+      // TODO try harder
+      none
+    }
+  }
+}
+
+
+/// determine if the base has limits
+/// -> "never" | "display" | "always"
+///
+/// see `https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L628`
+#let _limits-for-char(c) = {
+  let matches = _matches.with(c)
+  let class = _default-math-class(c)
+  if class == "large" {
+    if matches(regex("[∫-∳]|[⨋-⨜]")) { // is integral
+      "never"
+    } else {
+      "display"
+    }
+  } else if class == "relation" {
+    "always"
+  } else {
+    "never"
+  }
+}
+
+/// The default limit configuration for a math class.
+/// -> "never" | "display" | "always"
+///
+/// see `https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L643`
+#let _limits_for_class(class) = {
+  if class == "large" {
+    "display"
+  } else if class == "relation" {
+    "always"
+  } else {
+    "never"
+  }
+}
