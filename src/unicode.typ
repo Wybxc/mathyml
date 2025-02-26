@@ -106,8 +106,7 @@
   else if matches(regex("[Α-Ω]")) { "Α" }
   else if matches(regex("[α-ω]")) { "α" }
   else if matches(regex("[0-9]")) { "0" }
-  // TODO this doesn't work
-  // else if matches(regex("[0-9]")) { "0" } // Hebrew Alef -> Dalet.
+  else if matches(regex("[\\u05D0-\\u05D3]")) { "\u{05D0}" } // Hebrew Alef -> Dalet.
   else { return c }
 
   let start = if matches(regex("[A-Z]")) {
@@ -163,9 +162,8 @@
     else if (variant, italic) == ("sans", false) { 0x1D770 }
     else if (variant, italic) == ("sans", true) { 0x1D7AA }
     else { return c }
-  } else if matches(regex("[0-9]")) {
-  // TODO this doesn't work
-  // } else if matches(regex("[0-9]")) { 0x2135 } // Hebrew Alef -> Dalet.
+  } else if matches(regex("[\\u05D0-\\u05D3]")) {
+    0x2135 // Hebrew Alef -> Dalet.
   } else if matches(regex("[0-9]")) {
     // Numbers.
     if (variant, bold) == ("serif", false) { 0x0030 }
@@ -179,11 +177,8 @@
     panic("unreachable", c)
   }
  
-  // TODO remove
-  // panic(str.from-unicode(start + (str.to-unicode(c) - str.to-unicode(base))), str.to-unicode(c) - str.to-unicode(base), str.to-unicode(c), str.to-unicode(base), start)
   str.from-unicode(start + (str.to-unicode(c) - str.to-unicode(base)))
 }
-// #panic(_styled-char("A", variant: "frak", bold: true))
 
 #let convert_variants(
   /// -> str | content
