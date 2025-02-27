@@ -735,6 +735,8 @@
       inner
     } else if func == types.context_ {
       inner // nothing we can do here
+    } else if func == metadata {
+      inner
     } else if func == types.align-point {
       _err(ctx, "only top-level alignment points are implemented")
     } else if func == linebreak {
