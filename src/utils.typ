@@ -5,6 +5,7 @@
   styled: math.bb("a").func(),
   counter-update: counter("_mathml-counter-type").update(0).func(),
   context_: (context 1).func(),
+  align-point: $&$.body.func(),
 )
 
 #let convert-relative-len(len, inner) = {

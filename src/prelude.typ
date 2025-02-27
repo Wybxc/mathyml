@@ -1,10 +1,10 @@
 #import "unicode.typ": serif, sans, frak, mono, bb, cal
 
 #let _sizes-inner(body, paged, size) = {
-  import "convert.typ": _to-mathml
+  import "convert.typ": convert-mathml
   import "utils.typ": is-html
   context if is-html() {
-    _to-mathml(body, ctx: (size: size))
+    convert-mathml(body, size: size)
   } else {
     paged(body)
   }

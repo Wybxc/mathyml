@@ -14,7 +14,7 @@
 #let html-framed(content, block: true, attrs: none, class: none, center: auto) = {
   let maybe-center = if block {
     if center == auto or center == true {
-      "block-center "
+      "typstmathml-block-center "
     } else {
       ""
     }
@@ -37,7 +37,7 @@
   let elem = if block {
     "div"
   } else {
-    default-class += "inline-span "
+    default-class += "typstmathml-inline-span "
     "span"
   }
   // TODO
@@ -50,6 +50,34 @@
 }
 
 #let mathfonts() = html.elem("link", attrs: (rel: "stylesheet", href: "https://fred-wang.github.io/MathFonts/LatinModern/mathfonts.css"))
+
+#let stylesheets(include-fonts: true) = context if is-html() {
+  html.elem("style")[
+  #```CSS
+  .typstmathml-block-center {
+    text-align: center;
+  }
+  .typstmathml-inline-span {
+    /* font-size: 0pt; */
+    display: inline-block;
+  }
+  .typstmathml-align-right {
+    text-align: right;
+    padding-left: 0em;
+    padding-right: 0em;
+  }
+  .typstmathml-align-left {
+    text-align: left;
+    padding-left: 0em;
+    padding-right: 0em;
+  }
+  ```.text
+  ]
+
+  if include-fonts {
+    mathfonts()
+  }
+}
 
 #let to-mathml(
   inner,
@@ -66,7 +94,7 @@
   if block == auto {
     block = false
   }
-  let inner = convert._to-mathml(inner, ctx: (size: if block { "display" } else { "text" }))
+  let inner = convert.convert-mathml(inner, size: if block { "display" } else { "text" })
   if block {
     return html.elem("math", attrs: (display: "block"), inner)
   } else {

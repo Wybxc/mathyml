@@ -606,31 +606,22 @@
 /// ==== Unsupported
 /// - `math.cancel`
 /// - `math.styles`: upright, italic, bold
+/// - nested alignment
 /// - labels
 /// ==== Papercuts
 /// - variants: `math.frak` (works with prelude but not automatically)
 /// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript` (work with prelude but not automatically)
 /// - `vec` and `mat` align and gap only work in firefox.
 /// - `math.stretch`: only supports `op`s.
-#let _to-mathml(
-  inner,
-  ctx: (:),
-) = {
-  let ctx = (
-    size: "display",
-    allow-multi-return: false, // FIXME: use this more
-    on-error: panic,
-    on-warn: (..args) => (),
-    on-ignore: (elem, ..args) => panic("ignoring element", elem, ..args),
-    is-error: res => false,
-  ) + ctx
-  let rec(inner, ctx: none, ..args) = {
+#let _to-mathml(inner, ctx) = {
+  let outer-ctx = ctx
+  let rec(inner, allow-multi-return: false, ctx: none, ..args) = {
     assert.eq(args.pos(), ())
     if ctx == none {
-      _to-mathml(inner, ctx: ctx + args.named())
+      _to-mathml(inner, outer-ctx + args.named() + (allow-multi-return: allow-multi-return))
     } else {
       assert.eq(args.named(), (:))
-      _to-mathml(inner, ctx: ctx)
+      _to-mathml(inner, ctx + (allow-multi-return: allow-multi-return))
     }
   }
   let elem = html.elem
@@ -689,6 +680,10 @@
       inner
     } else if func == types.context_ {
       inner // nothing we can do here
+    } else if func == types.align-point {
+      _err(ctx, "only top-level alignment points are implemented")
+    } else if func == linebreak {
+      _err(ctx, "only top-level linebreaks are implemented")
     } else {
       _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }
@@ -697,3 +692,84 @@
   }
 }
 
+#let _convert-alignments(inner, ctx) = {
+  let elem = html.elem
+
+  let rows = ()
+  let columns = ()
+  let elems = ()
+  for child in inner.children {
+    if type(child) == content {
+      let func = child.func()
+      if func == types.align-point {
+        columns.push(elems.join())
+        elems = ()
+        continue
+      }
+      if func == linebreak {
+        if elems.len() != 0 {
+          columns.push(elems.join())
+          elems = ()
+        }
+        rows.push(columns)
+        columns = ()
+        continue
+      }
+    }
+    elems.push(_to-mathml(child, ctx))
+  }
+  if elems.len() != 0 {
+    columns.push(elems.join())
+  }
+  rows.push(columns)
+
+  elem(
+    "mtable",
+    rows.map(row => {
+      elem("mtr", row.enumerate().map(((i, v)) => {
+        let class = if calc.rem(i, 2) == 0 {
+          "typstmathml-align-right"
+        } else {
+          "typstmathml-align-left"
+        }
+        elem("mtd", attrs: (class: class), v)
+      }).join())
+    }).join()
+  )
+}
+
+#let _convert-maybe-aligned(inner, ctx) = {
+  if type(inner) == content {
+    if inner.func() == types.sequence {
+      for child in inner.children {
+        if type(child) == content {
+          if child.func() == types.align-point or child.func() == linebreak {
+            return _convert-alignments(inner, ctx)
+          }
+        }
+      }
+    }
+  }
+  _to-mathml(inner, ctx)
+}
+
+
+#let convert-mathml(
+  /// -> content
+  body,
+  /// -> "script-script" | "script" | "text" | "display"
+  size: "display",
+  /// -> bool
+  allow-multi-return: false, // FIXME: use this more
+  /// -> function
+  on-error: panic,
+  /// -> function
+  on-warn: (..args) => (),
+  /// -> function
+  on-ignore: (elem, ..args) => panic("ignoring element", elem, ..args),
+  /// -> function
+  is-error: res => false,
+) = {
+  let ctx = (size: size, allow-multi-return: allow-multi-return, on-error: on-error, on-warn: on-warn, on-ignore: on-ignore, is-error: is-error)
+  _convert-maybe-aligned(body, ctx)
+}
