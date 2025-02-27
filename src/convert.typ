@@ -43,7 +43,6 @@
 
 // TODO
 // wrong:
-// - `math.stretch`
 // - `lr` size (sometimes?)
 
 /// ==== Unsupported
@@ -54,7 +53,7 @@
 /// - variants: `math.frak` (works with prelude but not automatically)
 /// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript` (work with prelude but not automatically)
 /// - `vec` and `mat` align and gap only work in firefox.
-///
+/// - `math.stretch`: only supports `op`s.
 #let _to-mathml(
   inner,
   /// -> "script-script" | "script" | "text" | "display"
@@ -529,12 +528,17 @@
         })
       }
     } else if func == math.stretch {
-      // FIXME: is it ok to use `mo` for everything?
       let attrs = (stretchy: "true")
       if inner.has("size") and inner.size != 100% + 0pt {
-        attrs.insert("minsize", convert-relative-len(inner.size, inner)) // FIXME: this is likely wrong
+        attrs.insert("minsize", convert-relative-len(inner.size, inner))
       }
-      elem("mo", attrs: attrs, rec(inner.body))
+      let body = rec(inner.body)
+      if type(body) == content and body.func() == html.elem and body.tag == "mo" {
+        elem("mo", attrs: attrs, body.body)
+      } else {
+        // FIXME: support more
+        panic("can't stretch", body)
+      }
     } else if func == types.counter-update {
       inner
     } else if func == types.context_ {
