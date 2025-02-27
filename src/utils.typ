@@ -9,15 +9,19 @@
 )
 
 #let convert-relative-len(len, inner) = {
-  if len.ratio == 0% {
-    if len.length.abs == 0pt {
-      str(len.length.em) + "em"
+  if type(len) == length {
+    return if len.abs == 0pt {
+      str(len.em) + "em"
     } else {
-      str(len.length.to-absolute().pt()) + "pt"
+      str(len.to-absolute().pt()) + "pt"
     }
+  }
+  if len.ratio == 0% {
+    convert-relative-len(len.length, inner)
   } else if len.length == 0pt {
     repr(len.ratio)
   } else {
+    // TODO error instead
     panic(inner, len)
   }
 }

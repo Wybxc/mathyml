@@ -112,6 +112,17 @@
   html.elem("mo", inner)
 }
 
+#let _convert-h-space(ctx, rec, inner) = {
+  if inner.has("weak") and weak {
+    _err(ctx, "`h.weak` is unsupported")
+  }
+  if type(inner.amount) == fraction {
+    _err(ctx, "fraction amounts are unsupported")
+  }
+  let width = convert-relative-len(inner.amount, inner)
+  html.elem("mspace", attrs: ("width": width))
+}
+
 #let _convert-lr(ctx, rec, inner) = {
   if inner.has("size") {
     if inner.size != 100% + 0pt { // FIXME support different sizes
@@ -646,6 +657,8 @@
       elem("mi", inner.text)
     } else if func == types.space {
       elem("mspace", attrs: ("width": "0.5em"), inner)
+    } else if func == h {
+      _convert-h-space(ctx, rec, inner)
     } else if func == types.styled {
       _err(ctx, "styles are currently not supported. Use the functions from the prelude instead.", inner)
     } else if func == math.lr {
