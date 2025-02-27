@@ -66,7 +66,7 @@
   if block == auto {
     block = false
   }
-  let inner = convert._to-mathml(inner, size: if block { "display" } else { "text" })
+  let inner = convert._to-mathml(inner, ctx: (size: if block { "display" } else { "text" }))
   if block {
     return html.elem("math", attrs: (display: "block"), inner)
   } else {

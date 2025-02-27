@@ -4,7 +4,7 @@
   import "convert.typ": _to-mathml
   import "utils.typ": is-html
   context if is-html() {
-    _to-mathml(body, size: size)
+    _to-mathml(body, ctx: (size: size))
   } else {
     paged(body)
   }
