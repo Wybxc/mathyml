@@ -538,7 +538,7 @@
   // TODO improve this
   html.elem("mover", attrs: (accent: "true"))[
     #base
-    #html.elem("mtext", inner.accent)
+    #html.elem("mo", attrs: (stretchy: "true"), inner.accent)
   ]
 }
 
