@@ -1,14 +1,7 @@
 #import "prelude.typ"
 #import "unicode.typ" as _unicode: serif, sans, frak, mono, bb, cal, convert_variants
 #import "convert.typ"
-
-#let is-html() = {
-  if "target" in dictionary(std) {
-    target() == "html"
-  } else {
-    false
-  }
-}
+#import "utils.typ": is-html
 
 #let maybe-html(transform, inner) = context {
   if is-html() {

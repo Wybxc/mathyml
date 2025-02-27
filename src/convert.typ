@@ -44,15 +44,15 @@
 // TODO
 // wrong:
 // - `math.stretch`
-// - `lr` size
+// - `lr` size (sometimes?)
 
 /// ==== Unsupported
 /// - `math.cancel`
-/// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript`
 /// - `math.styles`: upright, italic, bold
 /// - labels
 /// ==== Papercuts
 /// - variants: `math.frak` (works with prelude but not automatically)
+/// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript` (work with prelude but not automatically)
 /// - `vec` and `mat` align and gap only work in firefox.
 ///
 #let _to-mathml(
@@ -61,8 +61,7 @@
   size: "display",
   allow-multi-return: false, // FIXME: use this more
 ) = {
-  let rec(inner, size: none, allow-multi-return: false) = {
-    if size == none { size = "display" }
+  let rec(inner, size: size, allow-multi-return: false) = {
     _to-mathml(inner, size: size, allow-multi-return: allow-multi-return)
   }
   let elem = html.elem
@@ -143,9 +142,7 @@
       assert.eq(inner.fields(), (:)) // TODO remove
       elem("mspace", attrs: ("width": "0.5em"), inner)
     } else if func == types.styled {
-      let child = inner.child
-      assert.eq(inner.styles, inner.styles)
-      panic(inner, inner.child, inner.styles) // TODO support these
+      panic("styles are currently not supported. Use the functions from the prelude instead.", inner)
     } else if func == math.lr {
       if inner.has("size") {
         assert.eq(inner.size, 100%, 0pt) // TODO support different sizes
@@ -207,6 +204,7 @@
         base = base.base
       }
       let limits = _has-limits(base, size)
+      let outer-size = size
       let size = if size == "display" or size == "text" {
         "script"
       } else {
@@ -274,21 +272,28 @@
           #maybe(tl)
         ]
       }
+      let attrs = (:)
+      if outer-size == "display" {
+        // FIXME is this correct?
+        attrs.insert("displaystyle", "true")
+      } else {
+        attrs.insert("displaystyle", "false")
+      }
       if t != none and b != none {
-        elem("munderover")[
+        elem("munderover", attrs: attrs)[
           #base
           #b
           #t
         ]
       } else if t != none {
-        elem("mover")[
+        elem("mover", attrs: attrs)[
           #base
           #t
         ]
       } else if b != none {
         // FIXME add `accent`?
         // elem("munder", attrs: (accent: "true"))[
-        elem("munder")[
+        elem("munder", attrs: attrs)[
           #base
           #b
         ]
@@ -532,6 +537,8 @@
       elem("mo", attrs: attrs, rec(inner.body))
     } else if func == types.counter-update {
       inner
+    } else if func == types.context_ {
+      inner // nothing we can do here
     } else {
       panic("unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }

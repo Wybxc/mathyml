@@ -4,6 +4,7 @@
   space: [ ].func(),
   styled: math.bb("a").func(),
   counter-update: counter("_mathml-counter-type").update(0).func(),
+  context_: (context 1).func(),
 )
 
 #let convert-relative-len(len, inner) = {
@@ -20,3 +21,10 @@
   }
 }
 
+#let is-html() = {
+  if "target" in dictionary(std) {
+    target() == "html"
+  } else {
+    false
+  }
+}
