@@ -143,8 +143,8 @@
 }
 
 #let _convert-h-space(ctx, rec, inner) = {
-  if inner.has("weak") and weak {
-    _err(ctx, "`h.weak` is unsupported")
+  if inner.has("weak") and inner.weak {
+    _warn(ctx, "`h.weak` is ignored")
   }
   if type(inner.amount) == fraction {
     _err(ctx, "fraction amounts are unsupported")
@@ -154,13 +154,18 @@
 }
 
 #let _convert-lr(ctx, rec, inner) = {
-  if inner.has("size") {
-    if inner.size != 100% + 0pt { // FIXME support different sizes
-      _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
-    }
-  }
   if type(inner.body) == content and inner.body.func() == types.sequence {
     let children = inner.body.children
+    if children.len() == 0 {
+      return none
+    }
+    if children.len() == 1 {
+      if inner.has("size") {
+        if inner.size != 100% + 0pt { // FIXME support different sizes
+          _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
+        }
+      }
+    }
     // remove the left and right delimiter
     let left = rec(children.remove(0))
     let right = rec(children.pop())
@@ -169,6 +174,12 @@
     if _is-err(ctx, left) { return left }
     if _is-err(ctx, right) { return right }
     if _is-err(ctx, children) { return children }
+
+    if inner.has("size") {
+      if inner.size != 100% + 0pt { // FIXME support different sizes
+        _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
+      }
+    }
 
     if ctx.allow-multi-return {
       if type(children) == array {
