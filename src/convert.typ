@@ -46,8 +46,38 @@
   }
 }
 
+#let _convert-sequence-multiline(ctx, rec-seq, rec, inner) = {
+  let elem = html.elem
+  let rows = ()
+  let elems = ()
+  for child in inner.children {
+    if type(child) == content and child.func() == linebreak {
+      rows.push(elems)
+      elems = ()
+    } else {
+      elems.push(child)
+    }
+  }
+  if elems.len() > 0 {
+    rows.push(elems)
+  }
+  let converted = ()
+  for row in rows {
+    let r = rec-seq(ctx, rec, row.join())
+    if _is-err(ctx, r) { return r }
+    converted.push(elem("mtr", elem("mtd", r)))
+  }
+  elem("mtable", converted.join())
+}
+
 #let _convert-sequence(ctx, rec, inner) = {
   let elem = html.elem
+  // create a table for multiple lines
+  for child in inner.children {
+    if type(child) == content and child.func() == linebreak {
+      return _convert-sequence-multiline(ctx, _convert-sequence, rec, inner)
+    }
+  }
   // group children until whitespace
   let children = ()
   let ungrouped = ()
@@ -252,6 +282,7 @@
   }
 
   let base = rec(base)
+  if _is-err(ctx, base) { return base }
   let (b, br, bl, t, tr, tl) = {
     let x = ()
     for v in (b, br, bl, t, tr, tl) {
