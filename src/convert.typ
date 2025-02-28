@@ -2,9 +2,7 @@
 #import "unicode.typ"
 
 #let _err(ctx, ..args) = (ctx.handlers.on-error)(..args)
-#let _warn(ctx, ..args) = {
-  let _ = (ctx.handlers.on-warn)(..args)
-}
+#let _warn(ctx, ..args) = (ctx.handlers.on-warn)(..args)
 #let _is-err(ctx, inner) = (ctx.handlers.is-error)(inner)
 
 #let _has-limits(ctx, base) = {
@@ -43,7 +41,8 @@
       }
       _has-limits(ctx, base.value)
     } else {
-      _warn(ctx, "cannot determine limits for content elem of type `" + repr(func2) + "`: " + repr(base))
+      let x = _warn(ctx, "cannot determine limits for content elem of type `" + repr(func2) + "`: " + repr(base))
+      if _is-err(ctx, x) { return x }
       false
     }
   } else if type(base) == symbol {
@@ -141,7 +140,7 @@
   /// -> str
   text,
   /// symbols should set this to true
-  /// -> boolean
+  /// -> bool
   auto-italic: false
 ) = {
   if text.len() == 0 {
@@ -275,7 +274,8 @@
 
 #let _convert-h-space(ctx, rec, inner) = {
   if inner.has("weak") and inner.weak {
-    _warn(ctx, "`h.weak` is ignored")
+    let x = _warn(ctx, "`h.weak` is ignored")
+    if _is-err(ctx, x) { return x }
   }
   if type(inner.amount) == fraction {
     return _err(ctx, "fraction amounts are unsupported")
@@ -423,6 +423,7 @@
   let (tr, br, tl, bl, t, b) = attachments
 
   let limits = _has-limits(ctx, base)
+  if _is-err(ctx, limits) { return limits }
   let size = if ctx.size == "display" or ctx.size == "text" {
     "script"
   } else if ctx.size == "script" or ctx.size == "script-script" {
@@ -764,6 +765,7 @@
         if elem.func() == types.align-point {
           let inner = inner.children.join(linebreak())
           let table = (ctx.rec._convert-alignments)(ctx, rec, inner, attrs: attrs)
+          if _is-err(ctx, table) { return table }
           return html.elem("mrow")[
             #left
             #table
@@ -1018,7 +1020,7 @@
       inner // nothing we can do here
     } else if func == metadata {
       if type(inner.value) == dictionary and utils._type-ident in inner.value {
-        _convert-custom-type(ctx, rec, inner.value)
+        return _convert-custom-type(ctx, rec, inner.value)
       }
       inner
     } else if func == types.align-point {
@@ -1026,7 +1028,8 @@
     } else if func == linebreak {
       return _err(ctx, "only top-level linebreaks are implemented")
     } else if func == math.limits {
-      _warn(ctx, "limits should be handled in attach", inner)
+      let x = _warn(ctx, "limits should be handled in attach", inner)
+      if _is-err(ctx, x) { return x }
       _to-mathml(inner.body, ctx)
     } else if func == raw {
       // FIXME: improve this?
@@ -1130,8 +1133,6 @@
   /// -> function
   on-warn: (..args) => (),
   /// -> function
-  on-ignore: (elem, ..args) => panic("ignoring element", elem, ..args),
-  /// -> function
   is-error: res => false,
 ) = {
   let ctx = (
@@ -1140,7 +1141,6 @@
     handlers: (
       on-error: on-error,
       on-warn: on-warn,
-      on-ignore: on-ignore,
       is-error: is-error
     ),
     context_: (
