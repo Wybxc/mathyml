@@ -88,9 +88,11 @@
       let f = ungrouped.first()
       // FIXME remove this hack
       if f.func() == html.elem and f.tag == "mtext" {
-        let nbsp = sym.space.nobreak
-        // FIXME remove the space?
-        f = elem("mtext", nbsp + f.body + nbsp)
+        if not unicode._is-space(f.body) {
+          let nbsp = sym.space.nobreak
+          // FIXME remove the space?
+          f = elem("mtext", nbsp + f.body + nbsp)
+        }
       }
       f
     } else if ungrouped.len() > 1 {
@@ -169,8 +171,8 @@
   }
 }
 
-#let _convert-symbol(ctx, rec, inner) = {
-  let inner = inner.text
+#let _convert-symbol(ctx, rec, outer) = {
+  let inner = outer.text
   // encode letters as identifiers.
   // see <https://www.compart.com/en/unicode/category> and <https://docs.rs/regex/latest/regex/#syntax>
   if inner.match(regex("^(?:\p{Ll}|\p{Lu})+$")) != none {
@@ -186,6 +188,9 @@
       }
       return _create-mi(ctx, inner)
     }
+  }
+  if unicode._is-space(inner) {
+    return html.elem("mtext", inner)
   }
   // TODO is this correct?
   html.elem("mo", inner)
