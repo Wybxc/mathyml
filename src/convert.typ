@@ -1,11 +1,11 @@
 #import "utils.typ" as utils: types, convert-relative-len
 #import "unicode.typ"
 
-#let _err(ctx, ..args) = (ctx.on-error)(..args)
+#let _err(ctx, ..args) = (ctx.handlers.on-error)(..args)
 #let _warn(ctx, ..args) = {
-  let _ = (ctx.on-warn)(..args)
+  let _ = (ctx.handlers.on-warn)(..args)
 }
-#let _is-err(ctx, inner) = (ctx.is-error)(inner)
+#let _is-err(ctx, inner) = (ctx.handlers.is-error)(inner)
 
 #let _has-limits(ctx, base) = {
   let size = ctx.size
@@ -37,6 +37,8 @@
       false
     } else if func2 == math.stretch {
       _has-limits(ctx, base.body)
+    } else if func2 == metadata {
+      _has-limits(ctx, base.value)
     } else {
       _warn(ctx, "cannot determine limits for content elem of type `" + repr(func2) + "`: " + repr(base))
       false
@@ -121,13 +123,49 @@
   elem("mrow", children.join())
 }
 
+#let _apply-style(
+  ctx,
+  /// -> str
+  text,
+  /// symbols should set this to true
+  /// -> boolean
+  auto-italic: false
+) = {
+  if text.len() == 0 {
+    return text
+  }
+  text.codepoints().map(c => unicode._styled-char(
+    c,
+    auto-italic: auto-italic,
+    bold: ctx.styles.bold,
+    italic: ctx.styles.upright-or-italic == "italic",
+    variant: ctx.styles.variant,
+  )).join()
+}
+
 #let _convert-text(ctx, rec, inner) = {
-  let inner = inner.text
+  let unstyled = inner
+  if type(inner) != str {
+    unstyled = inner.text
+  }
+  let styled = _apply-style(ctx, unstyled)
   // check if the text is a number
-  if inner.match(regex("^\d+$")) != none {
-    html.elem("mn", inner)
+  if unstyled.match(regex("^\d+$")) != none {
+    html.elem("mn", styled)
   } else {
-    html.elem("mtext", inner)
+    html.elem("mtext", styled)
+  }
+}
+
+#let _create-mi(ctx, text) = {
+  if type(text) != str {
+    _err(ctx, "unreachable", text, type(text))
+  }
+  let styled = _apply-style(ctx, text)
+  if ctx.styles.upright-or-italic == "upright" {
+    html.elem("mi", attrs: (mathvariant: "normal"), styled)
+  } else{
+    html.elem("mi", styled)
   }
 }
 
@@ -136,10 +174,42 @@
   // encode letters as identifiers.
   // see <https://www.compart.com/en/unicode/category> and <https://docs.rs/regex/latest/regex/#syntax>
   if inner.match(regex("^(?:\p{Ll}|\p{Lu})+$")) != none {
-    return html.elem("mi", inner)
+    // `mi` should sometimes not be italic: "For roman letters and greek lowercase letters, [italic] is already the default."
+    if inner.match(regex("[a-zA-Zα-ω]")) != none {
+      if ctx.styles.upright-or-italic == auto {
+        ctx.styles.upright-or-italic = "italic"
+      }
+      return _create-mi(ctx, inner)
+    } else {
+      if ctx.styles.upright-or-italic == auto {
+        ctx.styles.upright-or-italic = "upright"
+      }
+      return _create-mi(ctx, inner)
+    }
   }
   // TODO is this correct?
   html.elem("mo", inner)
+}
+
+#let _convert-op(ctx, rec, outer) = {
+  let inner = outer.text
+  ctx.styles.upright-or-italic = "upright"
+  if type(inner) == content {
+    let func = inner.func()
+    if func == types.symbol {
+      _create-mi(ctx, inner.text)
+    } else if func == text {
+      _create-mi(ctx, inner.text)
+    } else {
+      _err(ctx, "invalid content element of type `" + repr(func) + "`: " + repr(inner))
+    }
+  } else if type(inner) == str {
+    _create-mi(ctx, inner)
+  } else if type(inner) == symbol {
+    _convert-op(ctx, rec, [#inner])
+  } else {
+    _err(ctx, "invalid element of type `" + type(inner) + "`: " + repr(inner))
+  }
 }
 
 #let _convert-h-space(ctx, rec, inner) = {
@@ -595,10 +665,10 @@
 
   // FIXME is this ok?
   if type(body) == content and body.func() == text and body.text.len() > 1 {
-    return elem("mi", body.text)
+    return _create-mi(ctx, body.text)
   }
   if type(body) == str and body.len() > 1 {
-    return elem("mi", body)
+    return _create-mi(ctx, body)
   }
   if not (type(body) == content and body.func() == types.symbol) {
     let body = rec(inner.body)
@@ -655,18 +725,37 @@
   }
 }
 
+#let _convert-custom-type(ctx, rec, inner) = {
+  let ty = inner.at(utils._type-ident)
+  if ty == utils._dict-types.upright {
+    ctx.styles.upright-or-italic = "upright"
+    rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.italic {
+    ctx.styles.upright-or-italic = "italic"
+    rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.bold {
+    ctx.styles.bold = true
+    rec(inner.body, ctx: ctx)
+  } else {
+    _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
+  }
+}
+
 // TODO
 // wrong:
 // - `lr` size (sometimes?)
 
 /// ==== Unsupported
 /// - `math.cancel`
-/// - `math.styles`: upright, italic, bold
 /// - nested alignment
 /// - labels
+///
+/// ==== Only available via prelude
+/// - variants: serif, sans, frak, mono, bb, cal
+/// - `math.styles`: upright, italic, bold
+/// - sizes: display, inline, script, sscript
+///
 /// ==== Papercuts
-/// - variants: `math.frak` (works with prelude but not automatically)
-/// - sizes: `math.display`, `math.inline`, `math.script`, `math.sscript` (work with prelude but not automatically)
 /// - `vec` and `mat` align and gap only work in firefox.
 /// - `math.stretch`: only supports `op`s.
 #let _to-mathml(inner, ctx) = {
@@ -699,7 +788,7 @@
     } else if func == types.symbol {
       _convert-symbol(ctx, rec, inner)
     } else if func == math.op {
-      elem("mi", inner.text)
+      _convert-op(ctx, rec, inner)
     } else if func == types.space {
       elem("mspace", attrs: ("width": "0.5em"), inner)
     } else if func == h {
@@ -739,6 +828,9 @@
     } else if func == types.context_ {
       inner // nothing we can do here
     } else if func == metadata {
+      if type(inner.value) == dictionary and utils._type-ident in inner.value {
+        _convert-custom-type(ctx, rec, inner.value)
+      }
       inner
     } else if func == types.align-point {
       _err(ctx, "only top-level alignment points are implemented")
@@ -749,10 +841,14 @@
       _to-mathml(inner.body, ctx)
     } else if func == raw {
       // FIXME: improve this?
-      elem("mtext", inner.text)
+      _convert-text(ctx, rec, inner.text)
     } else {
       _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }
+  } else if type(inner) == str {
+    _convert-text(ctx, rec, inner)
+  } else if type(inner) == symbol {
+    _convert-symbol(ctx, rec, [#inner])
   } else {
     _err(ctx, "unknown element of type `" + str(type(inner)) + "`: " + repr(inner))
   }
@@ -836,6 +932,20 @@
   /// -> function
   is-error: res => false,
 ) = {
-  let ctx = (size: size, allow-multi-return: allow-multi-return, on-error: on-error, on-warn: on-warn, on-ignore: on-ignore, is-error: is-error)
+  let ctx = (
+    size: size,
+    allow-multi-return: allow-multi-return,
+    handlers: (
+      on-error: on-error,
+      on-warn: on-warn,
+      on-ignore: on-ignore,
+      is-error: is-error
+    ),
+    styles: (
+      upright-or-italic: auto,
+      bold: false,
+      variant: "serif",
+    ),
+  )
   _convert-maybe-aligned(body, ctx)
 }

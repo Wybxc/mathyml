@@ -34,3 +34,10 @@
     false
   }
 }
+
+#let _type-ident = "_mathml-type"
+#let _dict-types = (
+  upright: "upright",
+  italic: "italic",
+  bold: "bold",
+)

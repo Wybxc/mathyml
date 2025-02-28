@@ -1,4 +1,5 @@
 #import "unicode.typ": serif, sans, frak, mono, bb, cal
+#import "utils.typ" as _utils
 
 #let _sizes-inner(body, paged, size) = {
   import "convert.typ": convert-mathml
@@ -46,3 +47,26 @@
   /// -> content
   body
 ) = _sizes-inner(body, math.sscript, "script-script")
+
+/// Upright (non-italic) font style in math.
+#let upright(
+  /// The content to style.
+  /// -> content
+  body
+) = metadata((_utils._type-ident: _utils._dict-types.upright, body: body))
+
+/// Italic font style in math.
+/// 
+/// For roman letters and greek lowercase letters, this is already the default.
+#let italic(
+  /// The content to style.
+  /// -> content
+  body
+) = metadata((_utils._type-ident: _utils._dict-types.italic, body: body))
+
+/// Bold font style in math.
+#let bold(
+  /// The content to style.
+  /// -> content
+  body
+) = metadata((_utils._type-ident: _utils._dict-types.bold, body: body))
