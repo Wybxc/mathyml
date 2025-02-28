@@ -667,10 +667,13 @@
 }
 
 #let _convert-accent(ctx, rec, inner) = {
+  let attrs = (:)
   if inner.has("size") {
     // TODO
     if inner.size != 100% + 0pt {
       _err(ctx, "size is currently unsupported")
+      // this does not work
+      attrs.insert("minsize", convert-relative-len(inner.size, inner))
     }
   }
   let base = rec(inner.base)
@@ -678,7 +681,7 @@
   // TODO improve this
   html.elem("mover", attrs: (accent: "true"))[
     #base
-    #html.elem("mo", attrs: (stretchy: "true"), inner.accent)
+    #html.elem("mo", attrs: (stretchy: "true") + attrs, inner.accent)
   ]
 }
 
