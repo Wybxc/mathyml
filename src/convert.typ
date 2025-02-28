@@ -586,6 +586,23 @@
     (elem("mo", delim), none)
   }
 
+  for child in inner.children {
+    if type(child) == content and child.func() == types.sequence {
+      for elem in child.children {
+        // FIXME allow linebreak aswell?
+        if elem.func() == types.align-point {
+          let inner = inner.children.join(linebreak())
+          let table = (ctx.rec._convert-alignments)(ctx, rec, inner, attrs: attrs)
+          return html.elem("mrow")[
+            #left
+            #table
+            #right
+          ]
+        }
+      }
+    }
+  }
+
   let children = ()
   for v in inner.children {
     let r = rec(v)
@@ -752,6 +769,19 @@
   }
 }
 
+#let _create-rec(outer-ctx) = {
+  let rec(inner, allow-multi-return: false, ctx: none, ..args) = {
+    assert.eq(args.pos(), ())
+    if ctx == none {
+      (outer-ctx.rec._to-mathml)(inner, outer-ctx + args.named() + (allow-multi-return: allow-multi-return))
+    } else {
+      assert.eq(args.named(), (:))
+      (outer-ctx.rec._to-mathml)(inner, ctx + (allow-multi-return: allow-multi-return))
+    }
+  }
+  return rec
+}
+
 // TODO
 // wrong:
 // - `lr` size (sometimes?)
@@ -770,16 +800,7 @@
 /// - `vec` and `mat` align and gap only work in firefox.
 /// - `math.stretch`: only supports `op`s.
 #let _to-mathml(inner, ctx) = {
-  let outer-ctx = ctx
-  let rec(inner, allow-multi-return: false, ctx: none, ..args) = {
-    assert.eq(args.pos(), ())
-    if ctx == none {
-      _to-mathml(inner, outer-ctx + args.named() + (allow-multi-return: allow-multi-return))
-    } else {
-      assert.eq(args.named(), (:))
-      _to-mathml(inner, ctx + (allow-multi-return: allow-multi-return))
-    }
-  }
+  let rec = _create-rec(ctx)
   let elem = html.elem
   if type(inner) == array {
     if inner.len() == 1 {
@@ -865,7 +886,7 @@
   }
 }
 
-#let _convert-alignments(inner, ctx) = {
+#let _convert-alignments(ctx, rec, inner, attrs: (:)) = {
   let elem = html.elem
 
   let rows = ()
@@ -889,7 +910,9 @@
         continue
       }
     }
-    elems.push(_to-mathml(child, ctx))
+    let r = rec(child)
+    if _is-err(ctx, r) { return r }
+    elems.push(r)
   }
   if elems.len() != 0 {
     columns.push(elems.join())
@@ -898,6 +921,7 @@
 
   elem(
     "mtable",
+    attrs: attrs,
     rows.map(row => {
       elem("mtr", row.enumerate().map(((i, v)) => {
         let class = if calc.rem(i, 2) == 0 {
@@ -917,7 +941,8 @@
       for child in inner.children {
         if type(child) == content {
           if child.func() == types.align-point or child.func() == linebreak {
-            return _convert-alignments(inner, ctx)
+            let rec = _create-rec(ctx)
+            return _convert-alignments(ctx, rec, inner)
           }
         }
       }
@@ -956,6 +981,10 @@
       upright-or-italic: auto,
       bold: false,
       variant: "serif",
+    ),
+    rec: (
+      _to-mathml: _to-mathml,
+      _convert-alignments: _convert-alignments,
     ),
   )
   _convert-maybe-aligned(body, ctx)
