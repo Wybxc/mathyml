@@ -3,7 +3,23 @@
 #import "convert.typ"
 #import "utils.typ" as _utils: is-html
 
-#let maybe-html(transform, inner, ..args) = context {
+/// Transform the content if `html`-export is active.
+///
+/// Returns the content as-is, if `html` is not active.
+/// -> content
+#let maybe-html(
+  /// This function which will be called to transform the content.
+  ///
+  /// The first parameter of the function will be @maybe-html.inner, the other parameters are @maybe-html.args.
+  /// -> function
+  transform,
+  /// The content to transform.
+  /// -> content | any
+  inner,
+  /// Extra arguments to pass to @maybe-html.transform.
+  /// -> arguments
+  ..args
+) = context {
   if is-html() {
     transform(inner, ..args)
   } else {
@@ -88,17 +104,17 @@
   /// This callback will be called with every error.
   ///
   /// The function should take a single argument sink as parameter.
-  /// If you overwrite this parameter, don't forget to overwrite @is-error.
-  /// @is-error should return true if and only if @on-error was called.
+  /// If you overwrite this parameter, don't forget to overwrite @to-mathml-raw.is-error.
+  /// `is-error` should return true if and only if `on-error` was called.
   ///
-  /// For example you could return a custom dictionary on each error and check in @is-error for that.
+  /// For example you could return a custom dictionary on each error and check in `is-error` for that.
   /// -> function
   on-error: panic,
   /// This function will be called with every warning.
   /// 
   /// The function should take a single argument sink as parameter.
-  /// If you overwrite this parameter, don't forget to overwrite @is-error.
-  /// In combination with @is-error, you can `panic` on the warning, silence it or propagate it.
+  /// If you overwrite this parameter, don't forget to overwrite @to-mathml-raw.is-error.
+  /// In combination with `is-error`, you can `panic` on the warning, silence it or propagate it.
   /// -> function
   on-warn: (..args) => (),
   /// This callback will be called to determine if a result is an error.

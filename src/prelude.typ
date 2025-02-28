@@ -126,5 +126,7 @@
   body,
 ) = _custom-ty(_utils._dict-types.variant, math.cal, body, variant: "cal")
 
+/// dif symbol.
 #let dif = [#sym.space.thin #upright(symbol("d"))]
+/// Dif symbol.
 #let Dif = [#sym.space.thin #upright(symbol("D"))]

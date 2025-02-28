@@ -29,6 +29,8 @@
   }
 }
 
+/// Returns whether `html` is enabled and active.
+/// -> bool
 #let is-html(allow-ctx: true) = {
   if "target" in dictionary(std) {
     if allow-ctx {
