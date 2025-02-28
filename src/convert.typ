@@ -46,6 +46,8 @@
       _warn(ctx, "cannot determine limits for content elem of type `" + repr(func2) + "`: " + repr(base))
       false
     }
+  } else if type(base) == symbol {
+    _has-limits(ctx, [#base])
   } else {
     return _err(ctx, "cannot determine limits for elem of type `" + repr(type(base)) + "`: " + repr(base))
   }
