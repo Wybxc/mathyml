@@ -95,8 +95,8 @@
     else { none }
   if list != none {
     if (variant, bold, italic) == ("serif", true, false) { return list.at(0) }
-    else if (variant, bold, italic) == ("serif", true, false) { return list.at(1) }
-    else if (variant, bold, italic) == ("serif", false, true) { return list.at(2) }
+    else if (variant, bold, italic) == ("serif", false, true) { return list.at(1) }
+    else if (variant, bold, italic) == ("serif", true, true) { return list.at(2) }
     else if (variant, italic) == ("sans", true) { return list.at(3) }
     else if (variant, italic) == ("sans", false) { return list.at(4) }
     else if variant == "bb" { return list.at(5) }
