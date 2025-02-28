@@ -70,3 +70,6 @@
   /// -> content
   body
 ) = metadata((_utils._type-ident: _utils._dict-types.bold, body: body))
+
+#let dif = [#sym.space.thin #upright(symbol("d"))]
+#let Dif = [#sym.space.thin #upright(symbol("D"))]
