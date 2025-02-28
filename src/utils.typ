@@ -27,9 +27,13 @@
   }
 }
 
-#let is-html() = {
+#let is-html(allow-ctx: true) = {
   if "target" in dictionary(std) {
-    target() == "html"
+    if allow-ctx {
+      target() == "html"
+    } else {
+      true
+    }
   } else {
     false
   }
@@ -40,4 +44,5 @@
   upright: "upright",
   italic: "italic",
   bold: "bold",
+  variant: "variant",
 )

@@ -744,6 +744,9 @@
   } else if ty == utils._dict-types.bold {
     ctx.styles.bold = true
     rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.variant {
+    ctx.styles.variant = inner.variant
+    rec(inner.body, ctx: ctx)
   } else {
     _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
   }

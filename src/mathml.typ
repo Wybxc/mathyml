@@ -1,5 +1,5 @@
 #import "prelude.typ"
-#import "unicode.typ" as _unicode: serif, sans, frak, mono, bb, cal, convert_variants
+#import "unicode.typ" as _unicode: convert_variants
 #import "convert.typ"
 #import "utils.typ": is-html
 

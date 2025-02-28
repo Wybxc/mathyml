@@ -213,13 +213,6 @@
   symbol(res)
 }
 
-#let serif = convert_variants.with(variant: "serif")
-#let sans = convert_variants.with(variant: "sans")
-#let frak = convert_variants.with(variant: "frak")
-#let mono = convert_variants.with(variant: "mono")
-#let bb = convert_variants.with(variant: "bb")
-#let cal = convert_variants.with(variant: "cal")
-
 /// see <https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-utils/src/lib.rs#L345>
 /// for most unicode values only `large` and `relation` will be correct.
 #let _default-math-class(
