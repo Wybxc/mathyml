@@ -100,6 +100,12 @@
     if type(child) == content and child.func() == types.space {
       children.push(convert-ungrouped(ungrouped))
       ungrouped = ()
+    } else if type(child) == content and child.func() == math.lr {
+      children.push(convert-ungrouped(ungrouped))
+      let r = rec(child)
+      if _is-err(ctx, r) { return r }
+      children.push(r)
+      ungrouped = ()
     } else {
       let inner-ctx = ctx
       inner-ctx.allow-multi-return = true
@@ -116,9 +122,7 @@
         ungrouped.push(r)
       }
     }
-    if unicode._is-space(child) {
-      after-space = true
-    }
+    after-space = unicode._is-space(child)
   }
   if ungrouped.len() > 0 {
     children.push(convert-ungrouped(ungrouped))
@@ -259,7 +263,9 @@
     let left = rec(children.remove(0))
     let right = rec(children.pop())
     let children = if children.len() > 0 {
-      rec(children.join(), allow-multi-return: true)
+      // FIXME: set this to `true` to scale mid correctly
+      //        set this to `false` to scale the delims correctly...
+      rec(children.join(), allow-multi-return: false)
     } else {
       children
     }
@@ -290,6 +296,17 @@
     ]
   }
   return rec(inner.body) // FIXME: is this correct?
+}
+
+#let _convert-mid(ctx, rec, inner) = {
+  let body = rec(inner.body)
+  if _is-err(ctx, body) { return body }
+  if type(body) == content and body.func() == html.elem and body.tag == "mo" {
+    html.elem("mo", attrs: (fence: "true", form: "infix", stretchy: "true"), body.body)
+  } else {
+    // FIXME: support more
+    return _err(ctx, "can't scale mid", body)
+  }
 }
 
 #let _convert-frac(ctx, rec, inner) = {
@@ -949,6 +966,8 @@
       return _err(ctx, "styles are currently not supported. Use the functions from the prelude instead.", inner)
     } else if func == math.lr {
       _convert-lr(ctx, rec, inner)
+    } else if func == math.mid {
+      _convert-mid(ctx, rec, inner)
     } else if func == math.frac {
       _convert-frac(ctx, rec, inner)
     } else if func == math.root {
