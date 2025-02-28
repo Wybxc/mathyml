@@ -8,7 +8,7 @@
   c,
   auto-italic: false,
   bold: false,
-  /// -> boolean | auto
+  /// -> bool | auto
   italic: auto,
   /// one of "serif", "sans", "cal", "frak", "mono" or "bb"
   /// -> str
@@ -185,7 +185,7 @@
   inner,
   auto-italic: false,
   bold: false,
-  /// -> boolean | auto
+  /// -> bool | auto
   italic: auto,
   /// one of "serif", "sans", "cal", "frak", "mono" or "bb"
   /// -> str

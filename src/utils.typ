@@ -12,8 +12,10 @@
   if type(len) == length {
     return if len.abs == 0pt {
       str(len.em) + "em"
+    } else if len.em == 0 {
+      repr(len.abs)
     } else {
-      str(len.to-absolute().pt()) + "pt"
+      "calc(" + str(len.em) + "em + " + repr(len.abs) + ")" // FIXME does this work?
     }
   }
   if len.ratio == 0% {

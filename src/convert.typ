@@ -996,13 +996,13 @@
       _convert-binom(ctx, rec, inner)
     } else if func == math.attach {
       _convert-attach(ctx, rec, inner)
-    } else if func == math.vec { context {
+    } else if func == math.vec {
       _convert-vec(ctx, rec, inner)
-    } } else if func == math.mat { context {
+    } else if func == math.mat {
       _convert-mat(ctx, rec, inner)
-    } } else if func == math.cases { context {
+    } else if func == math.cases {
       _convert-cases(ctx, rec, inner)
-    } } else if (math.overline, math.overbrace, math.overbracket, math.overparen, math.overshell).contains(func) {
+    } else if (math.overline, math.overbrace, math.overbracket, math.overparen, math.overshell).contains(func) {
       _convert-overset(ctx, rec, inner)
     } else if (math.underline, math.underbrace, math.underbracket, math.underparen, math.undershell).contains(func) {
       _convert-underset(ctx, rec, inner)
