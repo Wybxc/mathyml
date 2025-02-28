@@ -210,8 +210,11 @@
 #let _convert-root(ctx, rec, inner) = {
   if inner.has("index") {
     let radicand = rec(inner.radicand)
-    let index = rec(inner.index, size: "script-script")
     if _is-err(ctx, radicand) { return radicand }
+    if inner.index == none {
+      return html.elem("msqrt", radicand)
+    }
+    let index = rec(inner.index, size: "script-script")
     if _is-err(ctx, index) { return index }
     html.elem("mroot")[#radicand #index]
   } else {
