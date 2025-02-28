@@ -1,4 +1,4 @@
-#import "../src/lib.typ" as mathyml: to-mathml
+#import "../src/lib.typ" as mathyml
 // include the prelude for `bold`, `frak` etc.
 #import mathyml.prelude: *
 
@@ -19,7 +19,7 @@ html.elem("style")[
 
 #set text(size: 17pt)
 
-#let to-mathml = mathyml.maybe-html.with(to-mathml)
+#let to-mathml = mathyml.maybe-html.with(mathyml.to-mathml)
 // convert equations manually, but only for html
 The fraction #to-mathml($1/3$) is not a decimal number. And we know
 #to-mathml($ a^2 + b^2 = c^2. $)
