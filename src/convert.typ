@@ -1094,9 +1094,9 @@
     rows.map(row => {
       elem("mtr", row.enumerate().map(((i, v)) => {
         let class = if calc.rem(i, 2) == 0 {
-          "typstmathml-align-right"
+          "mathyml-align-right"
         } else {
-          "typstmathml-align-left"
+          "mathyml-align-left"
         }
         elem("mtd", attrs: (class: class), v)
       }).join())

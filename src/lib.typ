@@ -3,9 +3,9 @@
 #import "convert.typ"
 #import "utils.typ" as _utils: is-html
 
-#let maybe-html(transform, inner) = context {
+#let maybe-html(transform, inner, ..args) = context {
   if is-html() {
-    transform(inner)
+    transform(inner, ..args)
   } else {
     inner
   }
@@ -14,7 +14,7 @@
 #let html-framed(content, block: true, attrs: none, class: none, center: auto) = {
   let maybe-center = if block {
     if center == auto or center == true {
-      "typstmathml-block-center "
+      "mathyml-block-center "
     } else {
       ""
     }
@@ -37,7 +37,7 @@
   let elem = if block {
     "div"
   } else {
-    default-class += "typstmathml-inline-span "
+    default-class += "mathyml-inline-span "
     "span"
   }
   html.elem(elem, attrs: (class: default-class) + attrs, html.frame(content))
@@ -48,19 +48,19 @@
 #let stylesheets(include-fonts: true) = context if is-html() {
   html.elem("style")[
   #```CSS
-  .typstmathml-block-center {
+  .mathyml-block-center {
     text-align: center;
   }
-  .typstmathml-inline-span {
+  .mathyml-inline-span {
     /* font-size: 0pt; */
     display: inline-block;
   }
-  .typstmathml-align-right {
+  .mathyml-align-right {
     text-align: right;
     padding-left: 0em;
     padding-right: 0em;
   }
-  .typstmathml-align-left {
+  .mathyml-align-left {
     text-align: left;
     padding-left: 0em;
     padding-right: 0em;

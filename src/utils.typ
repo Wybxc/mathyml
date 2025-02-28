@@ -41,11 +41,11 @@
   }
 }
 
-#let _type-ident = "_mathml-type"
+#let _type-ident = "_mathyml-type"
 #let _dict-types = (
   upright: "upright",
   italic: "italic",
   bold: "bold",
   variant: "variant",
 )
-#let _err-tag = "_mathml-error"
+#let _err-tag = "_mathyml-error"
