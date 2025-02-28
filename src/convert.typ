@@ -38,6 +38,9 @@
     } else if func2 == math.stretch {
       _has-limits(ctx, base.body)
     } else if func2 == metadata {
+      if type(base.value) == dictionary and utils._type-ident in base.value {
+        return _has-limits(ctx, base.value.body)
+      }
       _has-limits(ctx, base.value)
     } else {
       _warn(ctx, "cannot determine limits for content elem of type `" + repr(func2) + "`: " + repr(base))
