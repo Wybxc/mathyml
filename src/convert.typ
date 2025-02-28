@@ -47,7 +47,7 @@
       false
     }
   } else {
-    _err(ctx, "cannot determine limits for elem of type `" + repr(type(base)) + "`: " + repr(base))
+    return _err(ctx, "cannot determine limits for elem of type `" + repr(type(base)) + "`: " + repr(base))
   }
 }
 
@@ -173,7 +173,7 @@
 
 #let _create-mi(ctx, text) = {
   if type(text) != str {
-    _err(ctx, "unreachable", text, type(text))
+    return _err(ctx, "unreachable", text, type(text))
   }
   let styled = _apply-style(ctx, text)
   if ctx.styles.upright-or-italic == "upright" {
@@ -218,14 +218,14 @@
     } else if func == text {
       _create-mi(ctx, inner.text)
     } else {
-      _err(ctx, "invalid content element of type `" + repr(func) + "`: " + repr(inner))
+      return _err(ctx, "invalid content element of type `" + repr(func) + "`: " + repr(inner))
     }
   } else if type(inner) == str {
     _create-mi(ctx, inner)
   } else if type(inner) == symbol {
     _convert-op(ctx, rec, [#inner])
   } else {
-    _err(ctx, "invalid element of type `" + type(inner) + "`: " + repr(inner))
+    return _err(ctx, "invalid element of type `" + type(inner) + "`: " + repr(inner))
   }
 }
 
@@ -234,7 +234,7 @@
     _warn(ctx, "`h.weak` is ignored")
   }
   if type(inner.amount) == fraction {
-    _err(ctx, "fraction amounts are unsupported")
+    return _err(ctx, "fraction amounts are unsupported")
   }
   let width = convert-relative-len(inner.amount, inner)
   html.elem("mspace", attrs: ("width": width))
@@ -249,7 +249,7 @@
     if children.len() == 1 {
       if inner.has("size") {
         if inner.size != 100% + 0pt { // FIXME support different sizes
-          _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
+          return _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
         }
       }
     }
@@ -264,7 +264,7 @@
 
     if inner.has("size") {
       if inner.size != 100% + 0pt { // FIXME support different sizes
-        _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
+        return _err(ctx, "lr does not support custom sizes. Got size", inner.size, "for elem", inner)
       }
     }
 
@@ -349,20 +349,20 @@
   } else if ctx.size == "script" or ctx.size == "script-script" {
     "script-script"
   } else {
-    _err(ctx, "invalid size", ctx.size)
+    return _err(ctx, "invalid size", ctx.size)
   }
   // no need to process `limits` and `scripts` below
   if type(base) == content {
     if base.func() == math.limits {
       base = base.body
       if not limits {
-        _err(ctx, "expected to have limits for `limits`")
+        return _err(ctx, "expected to have limits for `limits`")
       }
       assert(limits)
     } else if base.func() == math.scripts {
       base = base.body
       if limits {
-        _err(ctx, "expected to not have limits for `scripts`")
+        return _err(ctx, "expected to not have limits for `scripts`")
       }
     }
   }
@@ -467,7 +467,7 @@
       "right"
     } else {
       if a != center {
-        _err(ctx, "invalid align", a, "in", inner)
+        return _err(ctx, "invalid align", a, "in", inner)
       }
     })
   }
@@ -489,7 +489,7 @@
     assert.eq(inner.delim.len(), 2)
     inner.delim
   } else {
-    _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
+    return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
   }
   elem("mrow")[
     #elem("mo", left)
@@ -513,7 +513,7 @@
       attrs.insert("rowalign", "bottom")
     } else {
       if a != center and a != horizon {
-        _err(ctx, "invalid align", a, "in", inner)
+        return _err(ctx, "invalid align", a, "in", inner)
       }
     }
   }
@@ -526,7 +526,7 @@
   if inner.has("augment") {
     // TODO augment
     if inner.augment != none {
-      _err(ctx, "augment is currently unsupported", inner)
+      return _err(ctx, "augment is currently unsupported", inner)
     }
   }
 
@@ -547,11 +547,11 @@
     ("(", ")")
   } else if type(inner.delim) == array {
     if inner.delim.len() != 2 {
-      _err(ctx, "expected delim of length 2 but got", inner.delim, "in", inner)
+      return _err(ctx, "expected delim of length 2 but got", inner.delim, "in", inner)
     }
     inner.delim
   } else {
-    _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
+    return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
   }
   elem("mrow")[
     #elem("mo", left)
@@ -577,7 +577,7 @@
       assert.eq(inner.delim.len(), 2)
       inner.delim.last()
     } else {
-      _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
+      return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
     }
     (none, elem("mo", delim))
   } else {
@@ -590,7 +590,7 @@
       assert.eq(inner.delim.len(), 2)
       inner.delim.first()
     } else {
-      _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
+      return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
     }
     (elem("mo", delim), none)
   }
@@ -635,7 +635,7 @@
     else if func == math.overbracket { "⎴" }
     else if func == math.overparen { "⏜" }
     else if func == math.overshell { "⏠" }
-    else { _err(ctx, "unreachable", inner) }
+    else { return _err(ctx, "unreachable", inner) }
   let body = rec(inner.body)
   if _is-err(ctx, body) { return body }
   let res = elem("mover", attrs: (accent: "true"))[ // FIXME `accent` attribute?
@@ -659,7 +659,7 @@
     else if func == math.underbracket { "⎵" }
     else if func == math.underparen { "⏝" }
     else if func == math.undershell { "⏡" }
-    else { _err(ctx, "unreachable", inner) }
+    else { return _err(ctx, "unreachable", inner) }
   let body = rec(inner.body)
   if _is-err(ctx, body) { return body }
   let res = elem("munder", attrs: (accent: "true"))[ // FIXME `accent` attribute?
@@ -680,7 +680,7 @@
   if inner.has("size") {
     // TODO
     if inner.size != 100% + 0pt {
-      _err(ctx, "size is currently unsupported")
+      return _err(ctx, "size is currently unsupported")
       // this does not work
       attrs.insert("minsize", convert-relative-len(inner.size, inner))
     }
@@ -726,7 +726,7 @@
   } else if class == "unary" {
     elem("mo", attrs: (form: "prefix"), body)
   } else {
-    _err(ctx, "invalid class `" + class + "` for `math.class`")
+    return _err(ctx, "invalid class `" + class + "` for `math.class`")
   }
 }
 
@@ -758,7 +758,7 @@
     html.elem("mo", attrs: attrs, body.body)
   } else {
     // FIXME: support more
-    _err(ctx, "can't stretch", body)
+    return _err(ctx, "can't stretch", body)
   }
 }
 
@@ -777,7 +777,7 @@
     ctx.styles.variant = inner.variant
     rec(inner.body, ctx: ctx)
   } else {
-    _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
+    return _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
   }
 }
 
@@ -839,7 +839,7 @@
     } else if func == h {
       _convert-h-space(ctx, rec, inner)
     } else if func == types.styled {
-      _err(ctx, "styles are currently not supported. Use the functions from the prelude instead.", inner)
+      return _err(ctx, "styles are currently not supported. Use the functions from the prelude instead.", inner)
     } else if func == math.lr {
       _convert-lr(ctx, rec, inner)
     } else if func == math.frac {
@@ -878,9 +878,9 @@
       }
       inner
     } else if func == types.align-point {
-      _err(ctx, "only top-level alignment points are implemented")
+      return _err(ctx, "only top-level alignment points are implemented")
     } else if func == linebreak {
-      _err(ctx, "only top-level linebreaks are implemented")
+      return _err(ctx, "only top-level linebreaks are implemented")
     } else if func == math.limits {
       _warn(ctx, "limits should be handled in attach", inner)
       _to-mathml(inner.body, ctx)
@@ -888,14 +888,14 @@
       // FIXME: improve this?
       _convert-text(ctx, rec, inner.text)
     } else {
-      _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
+      return _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }
   } else if type(inner) == str {
     _convert-text(ctx, rec, inner)
   } else if type(inner) == symbol {
     _convert-symbol(ctx, rec, [#inner])
   } else {
-    _err(ctx, "unknown element of type `" + str(type(inner)) + "`: " + repr(inner))
+    return _err(ctx, "unknown element of type `" + str(type(inner)) + "`: " + repr(inner))
   }
 }
 
