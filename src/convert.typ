@@ -189,8 +189,42 @@
   }
 }
 
-#let _convert-symbol(ctx, rec, outer) = {
+#let _attrs-for-class(ctx, class) = {
+  if class == none or class == "normal" or class == "vary" {
+    (:)
+  } else if class == "punctuation" {
+    (separator: "true")
+  } else if class == "opening" or class == "closing" or class == "fence" {
+    (fence: "true")
+  } else if class == "large" {
+    (largeop: "true")
+  } else if class == "relation" or class == "binary" {
+    (form: "infix")
+  } else if class == "unary" {
+    (form: "prefix")
+  } else {
+    return _err(ctx, "invalid class `" + class + "` for `math.class`")
+  }
+}
+
+#let _convert-symbol(ctx, rec, outer, class: none) = {
+  let elem = html.elem
   let inner = outer.text
+  let attrs = _attrs-for-class(ctx, class)
+  if _is-err(ctx, attrs) { return attrs }
+
+  let maybe_mi(ctx, inner) = {
+    if class == none {
+      _create-mi(ctx, inner)
+    } else {
+      let styled = _apply-style(ctx, inner)
+      if attrs == none or attrs.len() == 0 {
+        html.elem("mo", styled)
+      } else {
+        html.elem("mo", attrs: attrs, styled)
+      }
+    }
+  }
   // encode letters as identifiers.
   // see <https://www.compart.com/en/unicode/category> and <https://docs.rs/regex/latest/regex/#syntax>
   if inner.match(regex("^(?:\p{Ll}|\p{Lu})+$")) != none {
@@ -199,19 +233,23 @@
       if ctx.styles.upright-or-italic == auto {
         ctx.styles.upright-or-italic = "italic"
       }
-      return _create-mi(ctx, inner)
+      return maybe_mi(ctx, inner)
     } else {
       if ctx.styles.upright-or-italic == auto {
         ctx.styles.upright-or-italic = "upright"
       }
-      return _create-mi(ctx, inner)
+      return maybe_mi(ctx, inner)
     }
   }
   if unicode._is-space(inner) {
-    return html.elem("mtext", inner)
+    return elem("mtext", inner)
   }
-  // TODO is this correct?
-  html.elem("mo", inner)
+
+  if attrs == none or attrs.len() == 0 {
+    html.elem("mo", inner)
+  } else {
+    html.elem("mo", attrs: attrs, inner)
+  }
 }
 
 #let _convert-op(ctx, rec, outer) = {
@@ -811,7 +849,7 @@
   }
   let base = rec(inner.base)
   if _is-err(ctx, base) { return base }
-  // TODO improve this
+  // FIXME improve this
   html.elem("mover", attrs: (accent: "true"))[
     #base
     #html.elem("mo", attrs: (stretchy: "true") + attrs, inner.accent)
@@ -821,7 +859,6 @@
 #let _convert-class(ctx, rec, inner) = {
   let elem = html.elem
   let class = inner.class
-  // TODO convert `inner.body` in all cases with `rec`?
   let body = inner.body
 
   // FIXME is this ok?
@@ -832,26 +869,12 @@
     return _create-mi(ctx, body)
   }
   if not (type(body) == content and body.func() == types.symbol) {
-    let body = rec(inner.body)
+    let body = rec(body)
     if _is-err(ctx, body) { return body }
     return elem("mi", body)
   }
 
-  if class == "normal" or class == "vary" {
-    rec(inner.body)
-  } else if class == "punctuation" {
-    elem("mo", attrs: (separator: "true"), body)
-  } else if class == "opening" or class == "closing" or class == "fence" {
-    elem("mo", attrs: (fence: "true"), body)
-  } else if class == "large" {
-    elem("mo", attrs: (largeop: "true"), body)
-  } else if class == "relation" or class == "binary" {
-    elem("mo", attrs: (form: "infix"), body)
-  } else if class == "unary" {
-    elem("mo", attrs: (form: "prefix"), body)
-  } else {
-    return _err(ctx, "invalid class `" + class + "` for `math.class`")
-  }
+  _convert-symbol(ctx, rec, body, class: class)
 }
 
 #let _convert-primes(ctx, rec, inner) = {
