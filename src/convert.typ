@@ -840,8 +840,7 @@
 #let _convert-accent(ctx, rec, inner) = {
   let attrs = (:)
   if inner.has("size") {
-    // TODO
-    if inner.size != 100% + 0pt {
+    if inner.size != 100% + 0pt { // FIXME support different sizes
       return _err(ctx, "size is currently unsupported")
       // this does not work
       attrs.insert("minsize", convert-relative-len(inner.size, inner))
@@ -940,10 +939,6 @@
   }
   return rec
 }
-
-// TODO
-// wrong:
-// - `lr` size (sometimes?)
 
 /// ==== Unsupported
 /// - `math.cancel`
