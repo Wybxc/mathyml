@@ -21,8 +21,9 @@
   } else if len.length == 0pt {
     repr(len.ratio)
   } else {
-    // TODO error instead
-    panic(inner, len)
+    let abs = convert-relative-len(len.length, inner)
+    let rel = repr(len.ratio)
+    "calc(" + abs + " + " + rel + ")" // FIXME does this work?
   }
 }
 
