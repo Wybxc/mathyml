@@ -547,20 +547,103 @@
   if inner.has("column-gap") and inner.column-gap != 0% + 0.2em {
     attrs.insert("columnspacing", convert-relative-len(inner.column-gap, inner))
   }
+  let nrows = inner.rows.len()
+  let ncols = if inner.rows.len() > 0 {
+    inner.rows.first().len()
+  } else {
+    0
+  }
+  // draw a horizontal line after row?
+  let hlines = ()
+  // draw a vertical line after column?
+  let vlines = ()
+  let stroke-thickness = 0.05em
   if inner.has("augment") {
-    // TODO augment
     if inner.augment != none {
-      return _err(ctx, "augment is currently unsupported", inner)
+      let aug = inner.augment
+      if type(aug) == int {
+        if aug < 0 {
+          aug = ncols + aug
+        }
+        if aug == 0 {
+          return _err(ctx, "cannot draw a vertical line after column 0", inner)
+        }
+        if aug >= ncols {
+          return _err(ctx, "cannot draw a vertical line after column " + str(aug) + " of a matrix with " + str(ncols) + " columns", inner)
+        }
+        vlines.push(aug - 1)
+      } else if type(aug) == dictionary {
+        if "stroke" in aug {
+          // FIXME support more from stroke
+          if aug.stroke != auto and aug.stroke.thickness != auto {
+            stroke-thickness = aug.stroke.thickness
+          }
+        }
+        if "vline" in aug {
+          let vline = if type(aug.vline) != array {
+            (aug.vline,)
+          } else {
+            aug.vline
+          }
+          for aug in vline {
+            if aug < 0 {
+              aug = ncols + aug
+            }
+            if aug <= 0 {
+              return _err(ctx, "cannot draw a vertical line after column " + str(aug), inner)
+            }
+            if aug >= ncols {
+              return _err(ctx, "cannot draw a vertical line after column " + str(aug) + " of a matrix with " + str(ncols) + " columns", inner)
+            }
+            vlines.push(aug - 1)
+          }
+        }
+        if "hline" in aug {
+          let hline = if type(aug.hline) != array {
+            (aug.hline,)
+          } else {
+            aug.hline
+          }
+          for aug in hline {
+            if aug < 0 {
+              aug = nrows + aug
+            }
+            if aug <= 0 {
+              return _err(ctx, "cannot draw a horizontal line after row " + str(aug), inner)
+            }
+            if aug >= nrows {
+              return _err(ctx, "cannot draw a horizontal line after row " + str(aug) + " of a matrix with " + str(nrows) + " rows", inner)
+            }
+            hlines.push(aug - 1)
+          }
+        }
+      } else {
+        return _err(ctx, "expected either a int or a dictionary for augment but got", aug, inner)
+      }
     }
   }
+  let stroke-thickness = convert-relative-len(stroke-thickness, inner)
+  let stroke_ = stroke-thickness + " solid"
 
   let children = ()
-  for row in inner.rows {
+  for (y, row) in inner.rows.enumerate() {
     let res = ()
-    for v in row {
+    for (x, v) in row.enumerate() {
       let r = rec(v)
       if _is-err(ctx, r) { return r }
-      res.push(elem("mtd", r))
+      let e = if x not in vlines and y not in hlines {
+        elem("mtd", r)
+      } else {
+        let style = ""
+        if x in vlines {
+          style += "border-right:" + stroke_ + ";"
+        }
+        if y in hlines {
+          style += "border-bottom:" + stroke_ + ";"
+        }
+        elem("mtd", attrs: (style: style.trim()), r)
+      }
+      res.push(e)
     }
     children.push(elem("mtr", res.join()))
   }
