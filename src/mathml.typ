@@ -43,7 +43,7 @@
   html.elem(elem, attrs: (class: default-class) + attrs, html.frame(content))
 }
 
-#let mathfonts() = html.elem("link", attrs: (rel: "stylesheet", href: "https://fred-wang.github.io/MathFonts/LatinModern/mathfonts.css"))
+#let mathfonts() = html.elem("link", attrs: (rel: "stylesheet", href: "https://fred-wang.github.io/MathFonts/NewComputerModern/mathfonts.css"))
 
 #let stylesheets(include-fonts: true) = context if is-html() {
   html.elem("style")[
