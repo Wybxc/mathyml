@@ -103,7 +103,6 @@
   }
 
   let base = if matches(regex("[A-Z]")) { "A" }
-  else if matches(regex("[A-Z]")) { "A" }
   else if matches(regex("[a-z]")) { "a" }
   else if matches(regex("[Α-Ω]")) { "Α" }
   else if matches(regex("[α-ω]")) { "α" }
@@ -130,8 +129,7 @@
     else { panic("unreachable", c, variant, bold, italic) }
   } else if matches(regex("[a-z]")){
     // Latin lower.
-    if (variant, bold, italic) == ("serif", false, false) { 0x0041 }
-    else if (variant, bold, italic) == ("serif", false, false) { 0x0061 }
+    if (variant, bold, italic) == ("serif", false, false) { 0x0061 }
     else if (variant, bold, italic) == ("serif", true, false) { 0x1D41A }
     else if (variant, bold, italic) == ("serif", false, true) { 0x1D44E }
     else if (variant, bold, italic) == ("serif", true, true) { 0x1D482 }
