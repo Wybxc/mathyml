@@ -747,6 +747,9 @@
     } else if func == math.limits {
       _warn(ctx, "limits should be handled in attach", inner)
       _to-mathml(inner.body, ctx)
+    } else if func == raw {
+      // FIXME: improve this?
+      elem("mtext", inner.text)
     } else {
       _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }
