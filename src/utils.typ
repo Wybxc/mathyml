@@ -48,3 +48,4 @@
   bold: "bold",
   variant: "variant",
 )
+#let _err-tag = "_mathml-error"

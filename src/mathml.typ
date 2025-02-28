@@ -1,7 +1,7 @@
 #import "prelude.typ"
 #import "unicode.typ" as _unicode: convert_variants
 #import "convert.typ"
-#import "utils.typ": is-html
+#import "utils.typ" as _utils: is-html
 
 #let maybe-html(transform, inner) = context {
   if is-html() {
@@ -73,9 +73,39 @@
   }
 }
 
-#let to-mathml(
+/// Convert content to MathML.
+///
+/// -> content
+#let to-mathml-raw(
+  /// The equation/ content to convert.
+  /// -> content | math.equation
   inner,
+  /// Whether the equation is rendered as a separate block.
+  /// 
+  /// If `block` is auto, it will be inferred from the input.
+  /// -> bool | auto
   block: auto,
+  /// This callback will be called with every error.
+  ///
+  /// The function should take a single argument sink as parameter.
+  /// If you overwrite this parameter, don't forget to overwrite @is-error.
+  /// @is-error should return true if and only if @on-error was called.
+  ///
+  /// For example you could return a custom dictionary on each error and check in @is-error for that.
+  /// -> function
+  on-error: panic,
+  /// This function will be called with every warning.
+  /// 
+  /// The function should take a single argument sink as parameter.
+  /// If you overwrite this parameter, don't forget to overwrite @is-error.
+  /// In combination with @is-error, you can `panic` on the warning, silence it or propagate it.
+  /// -> function
+  on-warn: (..args) => (),
+  /// This callback will be called to determine if a result is an error.
+  ///
+  /// Errors will be propagated directly.
+  /// -> function
+  is-error: res => false,
 ) = {
   if type(inner) == content and inner.func() == math.equation {
     if block == auto {
@@ -88,11 +118,77 @@
   if block == auto {
     block = false
   }
-  let inner = convert.convert-mathml(inner, size: if block { "display" } else { "text" })
+  let converted = convert.convert-mathml(
+    inner,
+    on-error: on-error,
+    on-warn: on-warn,
+    is-error: is-error,
+    size: if block { "display" } else { "text" },
+  )
+  if is-error(converted) {
+    return converted
+  }
   if block {
-    return html.elem("math", attrs: (display: "block"), inner)
+    return html.elem("math", attrs: (display: "block"), converted)
   } else {
-    return html.elem("span", html.elem("math", inner))
+    return html.elem("span", html.elem("math", converted))
   }
 }
 
+
+/// Try to convert the inner body to MathML, but fallback to a svg frame on error.
+///
+/// -> content
+#let try-to-mathml(
+  /// The equation/ content to convert.
+  /// -> content | math.equation
+  inner,
+  /// Whether the equation is rendered as a separate block.
+  /// 
+  /// If `block` is auto, it will be inferred from the input.
+  /// -> bool | auto
+  block: auto,
+  /// Whether to consider warnings as errors.
+  /// -> bool
+  strict: false,
+) = {
+  let on-error(..args) = (_utils._err-tag: true, pos: args.pos()) + args.named()
+  let on-warn = if strict {
+    on-error
+  } else {
+    (..args) => ()
+  }
+  let is-error(item) = type(item) == dictionary and _utils._err-tag in item
+  let res = to-mathml-raw(
+    inner,
+    block: block,
+    on-error: on-error,
+    on-warn: on-warn,
+    is-error: is-error,
+  )
+  if is-error(res) {
+    // return repr(res) // FIXME fix all errors with this and `strict = true` above
+    html-framed(inner)
+  } else {
+    res
+  }
+}
+
+/// Convert the inner body to MathML and panic on error.
+///
+/// If you want to embed a svg-frame on error instead, use @try-to-mathml.
+/// If you want to handle errors yourself, use @to-mathml-raw.
+///
+/// -> content
+#let to-mathml(
+  /// The equation/ content to convert.
+  /// -> content | math.equation
+  inner,
+  /// Whether the equation is rendered as a separate block.
+  /// 
+  /// If `block` is auto, it will be inferred from the input.
+  /// -> bool | auto
+  block: auto,
+) = {
+  to-mathml-raw(inner, block: block)
+}

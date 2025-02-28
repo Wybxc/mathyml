@@ -1127,11 +1127,26 @@
   /// -> "script-script" | "script" | "text" | "display"
   size: "display",
   /// -> bool
-  allow-multi-return: false, // FIXME: use this more
+  allow-multi-return: false,
+  /// This callback will be called with every error.
+  ///
+  /// The function should take a single argument sink as parameter.
+  /// If you overwrite this parameter, don't forget to overwrite @is-error.
+  /// @is-error should return true if and only if @on-error was called.
+  ///
+  /// For example you could return a custom dictionary on each error and check in @is-error for that.
   /// -> function
   on-error: panic,
+  /// This function will be called with every warning.
+  /// 
+  /// The function should take a single argument sink as parameter.
+  /// If you overwrite this parameter, don't forget to overwrite @is-error.
+  /// In combination with @is-error, you can `panic` on the warning, silence it or propagate it.
   /// -> function
   on-warn: (..args) => (),
+  /// This callback will be called to determine if a result is an error.
+  ///
+  /// Errors will be propagated directly.
   /// -> function
   is-error: res => false,
 ) = {
