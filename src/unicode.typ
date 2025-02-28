@@ -322,15 +322,18 @@
   let spaces = (s, s.en, s.quad, s.fig, s.punct, s.thin, s.hair, s.nobreak, s.med, s.nobreak.narrow, s.third, s.quarter, s.sixth, sym.zws)
   if type(val) == content {
     if val.func() == text {
-      return _is-space(val.text)
+      _is-space(val.text)
     } else if val.func() == types.symbol {
-      return _is-space(val.text)
+      _is-space(val.text)
+    } else if val.func() == types.space {
+      true
     } else {
-      return false
+      false
     }
   } else if type(val) == symbol {
-    return val in spaces
+    val in spaces
+  } else {
+    val in spaces.map(str)
   }
-  val in spaces.map(str)
 }
 

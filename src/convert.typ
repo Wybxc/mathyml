@@ -88,32 +88,34 @@
   let ungrouped = ()
   let convert-ungrouped(ungrouped) = {
     if ungrouped.len() == 1 {
-      let f = ungrouped.first()
-      // FIXME remove this hack
-      if f.func() == html.elem and f.tag == "mtext" {
-        if not unicode._is-space(f.body) {
-          let nbsp = sym.space.nobreak
-          // FIXME remove the space?
-          f = elem("mtext", nbsp + f.body + nbsp)
-        }
-      }
-      f
+      ungrouped.first()
     } else if ungrouped.len() > 1 {
       elem("mrow", ungrouped.join())
     }
   }
-  for child in inner.children {
+  let after-space = false
+  for (i, child) in inner.children.enumerate() {
     if type(child) == content and child.func() == types.space {
       children.push(convert-ungrouped(ungrouped))
       ungrouped = ()
     } else {
-      let r = rec(child, allow-multi-return: true)
+      let inner-ctx = ctx
+      inner-ctx.allow-multi-return = true
+      let next = inner.children.at(i + 1, default: none)
+      if next != none and unicode._is-space(next) {
+        inner-ctx.context_.before-space = true
+      }
+      inner-ctx.context_.after-space = after-space
+      let r = rec(child, ctx: inner-ctx)
       if _is-err(ctx, r) { return r }
       if type(r) == array {
         ungrouped += r
       } else {
         ungrouped.push(r)
       }
+    }
+    if unicode._is-space(child) {
+      after-space = true
     }
   }
   if ungrouped.len() > 0 {
@@ -158,6 +160,13 @@
   if unstyled.match(regex("^\d+$")) != none {
     html.elem("mn", styled)
   } else {
+    let nbsp = sym.space.nobreak
+    if ctx.context_.after-space {
+      styled = nbsp + styled
+    }
+    if ctx.context_.before-space {
+      styled = styled + nbsp
+    }
     html.elem("mtext", styled)
   }
 }
@@ -825,6 +834,7 @@
     } else if func == math.op {
       _convert-op(ctx, rec, inner)
     } else if func == types.space {
+      return none // FIXME is that ok?
       elem("mspace", attrs: ("width": "0.5em"), inner)
     } else if func == h {
       _convert-h-space(ctx, rec, inner)
@@ -895,7 +905,7 @@
   let rows = ()
   let columns = ()
   let elems = ()
-  for child in inner.children {
+  for (i, child) in inner.children.enumerate() {
     if type(child) == content {
       let func = child.func()
       if func == types.align-point {
@@ -913,7 +923,16 @@
         continue
       }
     }
-    let r = rec(child)
+    let inner-ctx = ctx
+    let prev = inner.children.at(i - 1, default: none)
+    if prev != none and unicode._is-space(prev) {
+      inner-ctx.context_.after-space = true
+    }
+    let next = inner.children.at(i + 1, default: none)
+    if next != none and unicode._is-space(next) {
+      inner-ctx.context_.before-space = true
+    }
+    let r = rec(child, ctx: inner-ctx)
     if _is-err(ctx, r) { return r }
     elems.push(r)
   }
@@ -979,6 +998,10 @@
       on-warn: on-warn,
       on-ignore: on-ignore,
       is-error: is-error
+    ),
+    context_: (
+      before-space: false,
+      after-space: false,
     ),
     styles: (
       upright-or-italic: auto,
