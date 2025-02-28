@@ -258,7 +258,11 @@
     // remove the left and right delimiter
     let left = rec(children.remove(0))
     let right = rec(children.pop())
-    let children = rec(children.join(), allow-multi-return: true)
+    let children = if children.len() > 0 {
+      rec(children.join(), allow-multi-return: true)
+    } else {
+      children
+    }
 
     if _is-err(ctx, left) { return left }
     if _is-err(ctx, right) { return right }
