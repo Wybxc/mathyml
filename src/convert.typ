@@ -337,12 +337,30 @@
 
 #let _convert-attach(ctx, rec, inner) = {
   let elem = html.elem
-  let (tr, br, tl, bl, t, b) = ("tr", "br", "tl", "bl", "t", "b").map(name => inner.at(name, default: none))
+  let attachments = ("tr", "br", "tl", "bl", "t", "b").map(name => (name, inner.at(name, default: none))).to-dict()
 
   let base = inner.base
   while type(base) == content and base.func() == math.attach {
+    let attachments-before = attachments
+    let do-break = false
+    for key in ("tr", "br", "tl", "bl", "t", "b") {
+      let new = base.at(key, default: none)
+      if new != none {
+        if attachments.at(key) != none {
+          do-break = true
+          break
+        }
+        attachments.insert(key, new)
+      }
+    }
+    if do-break {
+      attachments = attachments-before
+      break
+    }
     base = base.base
   }
+  let (tr, br, tl, bl, t, b) = attachments
+
   let limits = _has-limits(ctx, base)
   let size = if ctx.size == "display" or ctx.size == "text" {
     "script"
@@ -368,7 +386,7 @@
   }
 
   // see <https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/attach.rs#L46>
-  let primed = type(base) == content and base.func() == math.primes
+  let primed = tr != none and type(tr) == content and tr.func() == math.primes
   let (t, tr) = if t != none and tr != none and primed and not limits {
     (none, tr + t)
   } else if t != none and tr == none and not limits {
