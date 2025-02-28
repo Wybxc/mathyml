@@ -40,12 +40,6 @@
     default-class += "typstmathml-inline-span "
     "span"
   }
-  // TODO
-  // let light-attrs = (class: default-class + "lighttheme") + attrs
-  // let dark-attrs = (class: default-class + " darktheme") + attrs
-
-  // html.elem(elem, attrs: light-attrs, html.frame(content))
-  // html.elem(elem, attrs: dark-attrs, html.frame(theme.dark(content)))
   html.elem(elem, attrs: (class: default-class) + attrs, html.frame(content))
 }
 

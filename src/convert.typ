@@ -604,7 +604,7 @@
 #let _convert-overset(ctx, rec, inner) = {
   let elem = html.elem
   let func = inner.func()
-  let symb = if func == math.overline { "¯" } // or "―"? TODO
+  let symb = if func == math.overline { "¯" } // or "―"?
     else if func == math.overbrace { "⏞" }
     else if func == math.overbracket { "⎴" }
     else if func == math.overparen { "⏜" }
@@ -612,7 +612,7 @@
     else { _err(ctx, "unreachable", inner) }
   let body = rec(inner.body)
   if _is-err(ctx, body) { return body }
-  let res = elem("mover", attrs: (accent: "true"))[ // TODO `accent` attribute?
+  let res = elem("mover", attrs: (accent: "true"))[ // FIXME `accent` attribute?
     #body
     #elem("mo", symb)
   ]
@@ -636,7 +636,7 @@
     else { _err(ctx, "unreachable", inner) }
   let body = rec(inner.body)
   if _is-err(ctx, body) { return body }
-  let res = elem("munder", attrs: (accent: "true"))[ // TODO `accent` attribute?
+  let res = elem("munder", attrs: (accent: "true"))[ // FIXME `accent` attribute?
     #body
     #elem("mo", symb)
   ]
