@@ -1,9 +1,5 @@
-#import "utils.typ" as utils: types, convert-relative-len
+#import "utils.typ" as utils: types, convert-relative-len, _err, _warn, _is-err
 #import "unicode.typ"
-
-#let _err(ctx, ..args) = (ctx.handlers.on-error)(..args)
-#let _warn(ctx, ..args) = (ctx.handlers.on-warn)(..args)
-#let _is-err(ctx, inner) = (ctx.handlers.is-error)(inner)
 
 #let _has-limits(ctx, base) = {
   let size = ctx.size
@@ -27,7 +23,8 @@
         else if class == "display" { size == "display" }
         else { false }
     } else if func2 == types.symbol {
-      let class = unicode._limits-for-char(base.text)
+      let class = unicode._limits-for-char(ctx, base.text)
+      if _is-err(ctx, class) { return class }
       if class == "always" { true }
         else if class == "display" { size == "display" }
         else { false }
@@ -144,13 +141,20 @@
   if text.len() == 0 {
     return text
   }
-  text.codepoints().map(c => unicode._styled-char(
-    c,
-    auto-italic: auto-italic,
-    bold: ctx.styles.bold,
-    italic: ctx.styles.upright-or-italic == "italic",
-    variant: ctx.styles.variant,
-  )).join()
+  let res = ""
+  for c in text.codepoints() {
+    let x = unicode._styled-char(
+      ctx,
+      c,
+      auto-italic: auto-italic,
+      bold: ctx.styles.bold,
+      italic: ctx.styles.upright-or-italic == "italic",
+      variant: ctx.styles.variant,
+    )
+    if _is-err(ctx, x) { return x }
+    res += x
+  }
+  return res
 }
 
 #let _convert-text(ctx, rec, inner) = {

@@ -1,9 +1,10 @@
-#import "utils.typ": types
+#import "utils.typ": types, _err, _is-err
 
 #let _matches(c, regex) = c.find(regex) != none
 
 // See https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/text.rs#L185
 #let _styled-char(
+  ctx,
   /// -> str
   c,
   auto-italic: false,
@@ -15,7 +16,7 @@
   variant: "serif",
 ) = {
   if c.clusters().len() != 1 {
-    panic("expected a single character but got " + c.clusters().len() + ": " + c)
+    _err(ctx, "expected a single character but got " + c.clusters().len() + ": " + c)
   }
   let matches = _matches.with(c)
   let italic = if italic == auto {
@@ -126,7 +127,7 @@
     else if (variant, bold) == ("frak", true) { 0x1D56C }
     else if variant == "mono" { 0x1D670 }
     else if variant == "bb" { 0x1D538 }
-    else { panic("unreachable", c, variant, bold, italic) }
+    else { return _err(ctx, "unreachable", c, variant, bold, italic) }
   } else if matches(regex("[a-z]")){
     // Latin lower.
     if (variant, bold, italic) == ("serif", false, false) { 0x0061 }
@@ -143,7 +144,7 @@
     else if (variant, bold) == ("frak", true) { 0x1D586 }
     else if variant == "mono" { 0x1D68A }
     else if variant == "bb" { 0x1D552 }
-    else { panic("unreachable", c, variant, bold, italic) }
+    else { return _err(ctx, "unreachable", c, variant, bold, italic) }
   } else if matches(regex("[Α-Ω]")) {
     // Greek upper.
     if (variant, bold, italic) == ("serif", false, false) { 0x0391 }
@@ -174,52 +175,20 @@
     else if variant == "mono" { 0x1D7F6 }
     else { return c }
   } else {
-    panic("unreachable", c)
+    return _err(ctx, "unreachable", c)
   }
  
   str.from-unicode(start + (str.to-unicode(c) - str.to-unicode(base)))
 }
 
-#let convert_variants(
-  /// -> str | content
-  inner,
-  auto-italic: false,
-  bold: false,
-  /// -> bool | auto
-  italic: auto,
-  /// one of "serif", "sans", "cal", "frak", "mono" or "bb"
-  /// -> str
-  variant: "serif",
-) = {
-  let s = if type(inner) == str {
-    inner
-  } else if type(inner) == content {
-    let func = inner.func()
-    if func == types.symbol {
-      inner.text
-    } else if func == types.sequence {
-      return inner.children.map(c => convert_variants(c, auto-italic: auto-italic, bold: bold, italic: italic, variant: variant)).join()
-    } else if func == types.space {
-      return inner
-    } else {
-      panic("invalid content type " + repr(func))
-    }
-  } else {
-    panic("invalid type " + repr(type(inner)))
-  }
-  let res = s.codepoints().map(c => _styled-char(c, auto-italic: auto-italic, bold: bold, italic: italic, variant: variant)).join()
-  // don't return a string because in `_to-mathml` we convert strings to `mtext`
-  // and we want to create a `mi`.
-  symbol(res)
-}
-
 /// see <https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-utils/src/lib.rs#L345>
 /// for most unicode values only `large` and `relation` will be correct.
 #let _default-math-class(
+  ctx,
   c
 ) = {
   if c.clusters().len() != 1 {
-    panic("expected a single character but got " + c.clusters().len() + ": " + c)
+    return _err(ctx, "expected a single character but got " + c.clusters().len() + ": " + c)
   }
   if c == ":" {
     "relation"
@@ -287,9 +256,10 @@
 /// -> "never" | "display" | "always"
 ///
 /// see `https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L628`
-#let _limits-for-char(c) = {
+#let _limits-for-char(ctx, c) = {
   let matches = _matches.with(c)
-  let class = _default-math-class(c)
+  let class = _default-math-class(ctx, c)
+  if _is-err(ctx, class) { return class }
   if class == "large" {
     if matches(regex("[∫-∳]|[⨋-⨜]")) { // is integral
       "never"

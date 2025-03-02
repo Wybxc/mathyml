@@ -51,3 +51,8 @@
   variant: "variant",
 )
 #let _err-tag = "_mathyml-error"
+
+
+#let _err(ctx, ..args) = (ctx.handlers.on-error)(..args)
+#let _warn(ctx, ..args) = (ctx.handlers.on-warn)(..args)
+#let _is-err(ctx, inner) = (ctx.handlers.is-error)(inner)
