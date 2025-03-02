@@ -565,6 +565,7 @@
     if _is-err(ctx, r) { return r }
     children.push(elem("mtr", elem("mtd", r)))
   }
+  // FIXME implement the attrs above using CSS
   let table = elem("mtable", attrs: attrs, children.join())
   let (left, right) = if not inner.has("delim") {
     ("(", ")")
@@ -895,7 +896,7 @@
     let body = ("′", "″", "‴", "⁗").at(c - 1)
     elem("mo", attrs: (lspace: "0em", rspace: "0em", style: "padding-left: 0.08em"), body)
   } else {
-    elem("mrow", attrs: (lspace: "0em", rspace: "0em", style: "padding-left: 0.08em"), {
+    elem("mrow", {
       for _ in range(c) {
         elem("mo", attrs: (lspace: "0em", rspace: "0em"), "′")
       }

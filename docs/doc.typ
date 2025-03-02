@@ -180,7 +180,14 @@ I've indicated the corresponding test names in parentheses.
 
 
 #e-heading[List of of elements/ features used that do not come from MathML Core]<list-of-non-core>
-TODO 
+- some CSS for inserting html `frame`s inline or as a block
+- some CSS for alignment points
+- vec: uses `columnalign` and `rowspacing` from `mtable` which are non-standard
+- mat:
+  - uses `columnalign`, `rowalign`, `columnspacing` and `rowspacing` from `mtable` which are non-standard
+  - uses CSS (`border-right` and `border-bottom`) for augments
+- cases: uses `rowspacing`, `columnalign` from `mtable` which are non-standard
+- primes: uses CSS (`padding-left`)
 
 #pagebreak(weak: true)
 
