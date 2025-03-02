@@ -541,32 +541,104 @@
   }
 }
 
+#let _create-table(
+  ctx,
+  inner,
+  /// -> none | content
+  left-delim,
+  /// -> none | content
+  right-delim,
+  /// -> array
+  rows,
+  /// -> none | alignment
+  align: none,
+  /// -> none | str
+  column-gap: none,
+  /// -> none | str
+  row-gap: none,
+  /// -> none | function
+  extra-style: none,
+  /// -> none | function
+  extra-class: none,
+) = {
+  let elem = html.elem
+  let children = ()
+  for (y, row) in rows.enumerate() {
+    let row-children = ()
+    for (x, child) in row.enumerate() {
+      let class = ""
+      let style = ""
+      if align != none {
+        if align == start or align == left {
+          class += "mathyml-align-left "
+        } else if align == end or align == right {
+          class += "mathyml-align-right"
+        // FIXME allow more aligns?
+        // } else if align == top {
+          // attrs.insert("rowalign", "top")
+        // } else if align == bottom {
+          // attrs.insert("rowalign", "bottom")
+        } else {
+          // and align != horizon
+          if align != center {
+            return _err(ctx, "invalid align", align, "in", inner)
+          } else {
+            none
+          }
+        }
+      }
+      if row-gap != none and row-gap != 0% + 0.2em and y + 1 != rows.len() {
+        style += "padding-bottom:" + convert-relative-len(row-gap, inner) + ";"
+      }
+      if column-gap != none and column-gap != 0% + 0.2em and x + 1 != row.len() {
+        style += "padding-right:" + convert-relative-len(column-gap, inner) + ";"
+      }
+      if extra-style != none {
+        style += extra-style(y, x)
+      }
+      if extra-class != none {
+        class += extra-class(y, x)
+      }
+      let attrs = (:)
+      if class.len() > 0 {
+        attrs.insert("class", class.trim())
+      }
+      if style.len() > 0 {
+        attrs.insert("style", style.trim())
+      }
+      row-children.push(elem("mtd", attrs: attrs, child))
+    }
+    children.push(elem("mtr", row-children.join()))
+  }
+  let table = elem("mtable", children.join())
+
+  if left-delim == none and right-delim == none {
+    table
+  } else {
+    if left-delim != none {
+      left-delim = elem("mo", left-delim)
+    }
+    if right-delim != none {
+      right-delim = elem("mo", right-delim)
+    }
+    elem("mrow")[
+      #left-delim
+      #table
+      #right-delim
+    ]
+  }
+}
+
 #let _convert-vec(ctx, rec, inner) = {
   let elem = html.elem
-  let attrs = (:)
-  if inner.has("align") and inner.align != center {
-    let a = inner.align
-    attrs.insert("columnalign", if a == start or a == left {
-      "left"
-    } else if a == end or a == right {
-      "right"
-    } else {
-      if a != center {
-        return _err(ctx, "invalid align", a, "in", inner)
-      }
-    })
-  }
-  if inner.has("gap") and inner.gap != 0% + 0.2em {
-    attrs.insert("rowspacing", convert-relative-len(inner.gap, inner))
-  }
+  let align = inner.at("align", default: none)
+  let row-gap = inner.at("gap", default: none)
   let children = ()
   for v in inner.children {
     let r = rec(v)
     if _is-err(ctx, r) { return r }
-    children.push(elem("mtr", elem("mtd", r)))
+    children.push((r,))
   }
-  // FIXME implement the attrs above using CSS
-  let table = elem("mtable", attrs: attrs, children.join())
   let (left, right) = if not inner.has("delim") {
     ("(", ")")
   } else if inner.delim == none {
@@ -577,38 +649,15 @@
   } else {
     return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
   }
-  elem("mrow")[
-    #elem("mo", left)
-    #table
-    #elem("mo", right)
-  ]
+  _create-table(ctx, inner, left, right, children, align: align, row-gap: row-gap)
 }
 
 #let _convert-mat(ctx, rec, inner) = {
   let elem = html.elem
-  let attrs = (:)
-  if inner.has("align") and inner.align != center {
-    let a = inner.align
-    if a == start or a == left {
-      attrs.insert("columnalign", "left")
-    } else if a == end or a == right {
-      attrs.insert("columnalign", "left")
-    } else if a == top {
-      attrs.insert("rowalign", "top")
-    } else if a == bottom {
-      attrs.insert("rowalign", "bottom")
-    } else {
-      if a != center and a != horizon {
-        return _err(ctx, "invalid align", a, "in", inner)
-      }
-    }
-  }
-  if inner.has("row-gap") and inner.row-gap != 0% + 0.2em {
-    attrs.insert("rowspacing", convert-relative-len(inner.row-gap, inner))
-  }
-  if inner.has("column-gap") and inner.column-gap != 0% + 0.2em {
-    attrs.insert("columnspacing", convert-relative-len(inner.column-gap, inner))
-  }
+  let align = inner.at("align", default: none)
+  let row-gap = inner.at("row-gap", default: none)
+  let column-gap = inner.at("column-gap", default: none)
+
   let nrows = inner.rows.len()
   let ncols = if inner.rows.len() > 0 {
     inner.rows.first().len()
@@ -688,28 +737,15 @@
   let stroke_ = stroke-thickness + " solid"
 
   let children = ()
-  for (y, row) in inner.rows.enumerate() {
+  for row in inner.rows {
     let res = ()
-    for (x, v) in row.enumerate() {
+    for v in row {
       let r = rec(v)
       if _is-err(ctx, r) { return r }
-      let e = if x not in vlines and y not in hlines {
-        elem("mtd", r)
-      } else {
-        let style = ""
-        if x in vlines {
-          style += "border-right:" + stroke_ + ";"
-        }
-        if y in hlines {
-          style += "border-bottom:" + stroke_ + ";"
-        }
-        elem("mtd", attrs: (style: style.trim()), r)
-      }
-      res.push(e)
+      res.push(r)
     }
-    children.push(elem("mtr", res.join()))
+    children.push(res)
   }
-  let table = elem("mtable", attrs: attrs, children.join())
   let (left, right) = if not inner.has("delim") {
     ("(", ")")
   } else if inner.delim == none {
@@ -718,29 +754,33 @@
     if inner.delim.len() != 2 {
       return _err(ctx, "expected delim of length 2 but got", inner.delim, "in", inner)
     }
-    if inner.delim == (none, none) {
-      return table // don't create empty delimiters
-    }
     inner.delim
   } else {
     return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
   }
-  elem("mrow")[
-    #elem("mo", left)
-    #table
-    #elem("mo", right)
-  ]
+  _create-table(
+    ctx, inner, left, right, children,
+    align: align,
+    column-gap: column-gap,
+    row-gap: row-gap,
+    extra-style: (y, x) => {
+      let style =""
+      if x in vlines {
+        style += "border-right:" + stroke_ + ";"
+      }
+      if y in hlines {
+        style += "border-bottom:" + stroke_ + ";"
+      }
+      style
+    }
+  )
 }
 
 #let _convert-cases(ctx, rec, inner) = {
   let elem = html.elem
-  let attrs = (:)
-  if inner.has("gap") and inner.gap != 0% + 0.2em {
-    attrs.insert("rowspacing", convert-relative-len(inner.gap, inner))
-  }
+  let row-gap = inner.at("gap", default: none)
 
-  let (left, right) = if inner.has("reverse") and inner.reverse {
-    attrs.insert("columnalign", "right")
+  let (left, right, align, reverse-align) = if inner.has("reverse") and inner.reverse {
     let delim = if not inner.has("delim") {
       "}"
     } else if inner.delim == none {
@@ -751,9 +791,8 @@
     } else {
       return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
     }
-    (none, elem("mo", delim))
+    (none, delim, right, true)
   } else {
-    attrs.insert("columnalign", "left")
     let delim = if not inner.has("delim") {
       "{"
     } else if inner.delim == none {
@@ -764,40 +803,33 @@
     } else {
       return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
     }
-    (elem("mo", delim), none)
+    (delim, none, left, false)
   }
 
   for child in inner.children {
     if type(child) == content and child.func() == types.sequence {
       for elem in child.children {
-        // FIXME allow linebreak aswell?
-        if elem.func() == types.align-point {
+        if elem.func() == types.align-point or elem.func() == linebreak {
           let inner = inner.children.join(linebreak())
-          let table = (ctx.rec._convert-alignments)(ctx, rec, inner, attrs: attrs)
-          if _is-err(ctx, table) { return table }
-          return html.elem("mrow")[
-            #left
-            #table
-            #right
-          ]
+          return (ctx.rec._convert-alignments)(
+            ctx, rec, inner,
+            row-gap: row-gap,
+            reverse-align: reverse-align,
+            left-delim: left,
+            right-delim: right,
+          )
         }
       }
     }
   }
-
   let children = ()
   for v in inner.children {
     let r = rec(v)
     if _is-err(ctx, r) { return r }
-    children.push(elem("mtr", elem("mtd", r)))
+    children.push((r,))
   }
-  let table = elem("mtable", attrs: attrs, children.join())
 
-  elem("mrow")[
-    #left
-    #table
-    #right
-  ]
+  _create-table(ctx, inner, left, right, children, align: align, row-gap: row-gap)
 }
 
 #let _convert-overset(ctx, rec, inner) = {
@@ -1043,7 +1075,16 @@
   }
 }
 
-#let _convert-alignments(ctx, rec, inner, attrs: (:)) = {
+#let _convert-alignments(
+  ctx,
+  rec,
+  inner,
+  left-delim: none,
+  right-delim: none,
+  row-gap: none,
+  column-gap: none,
+  reverse-align: false,
+) = {
   let elem = html.elem
 
   let rows = ()
@@ -1087,22 +1128,32 @@
   }
   rows.push(columns)
 
-  elem(
-    "mtable",
-    attrs: attrs,
-    rows.map(row => {
-      elem("mtr", row.enumerate().map(((i, v)) => {
-        if not found-align {
-          return elem("mtd", v)
-        }
-        let class = if calc.rem(i, 2) == 0 {
-          "mathyml-align-right"
-        } else {
-          "mathyml-align-left"
-        }
-        elem("mtd", attrs: (class: class), v)
-      }).join())
-    }).join()
+  let last-index-rem = if rows.len() > 0 {
+    calc.rem(rows.first().len() + 1, 2)
+  } else {
+    0
+  }
+  let extra-class = if reverse-align {
+    (y, x) => if calc.rem(x, 2) == last-index-rem {
+      "mathyml-align-right"
+    } else {
+      "mathyml-align-left"
+    }
+  } else if found-align {
+    (y, x) => if calc.rem(x, 2) == 0 {
+      "mathyml-align-right"
+    } else {
+      "mathyml-align-left"
+    }
+  } else {
+    none
+  }
+
+  _create-table(
+    ctx, inner, left-delim, right-delim, rows,
+    row-gap: row-gap,
+    column-gap: column-gap,
+    extra-class: extra-class,
   )
 }
 

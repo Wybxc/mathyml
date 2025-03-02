@@ -79,7 +79,7 @@ In general the output tends to look much better in firefox than chrome.
 See the #link(<errors>)[section about missing/ non-working features].
 
 MathML Core is not complete and can't render everything itself. Instead it relies on Web Platform features (such as CSS) (see the #link("https://w3c.github.io/mathml-core/docs/explainer.html")[explainer]).
-#link(<list-of-non-core>)[Here] is a list of of elements/ features used that do not come from MathML Core.
+#link(<list-of-non-core>)[Here] is a list of polyfills/ features used that do not come from MathML Core.
 
 = Quickstart<quickstart>
 
@@ -179,14 +179,14 @@ I've indicated the corresponding test names in parentheses.
 / overset: multiline in overbrace looks weird, it has extra space
 
 
-#e-heading[List of of elements/ features used that do not come from MathML Core]<list-of-non-core>
+#e-heading[List of polyfills/ features used that do not come from MathML Core]<list-of-non-core>
 - some CSS for inserting html `frame`s inline or as a block
 - some CSS for alignment points
-- vec: uses `columnalign` and `rowspacing` from `mtable` which are non-standard
+- cases: uses CSS `padding-bottom` for gap
+- vec: uses CSS `padding-bottom` for gap, `text-align` for align.
 - mat:
-  - uses `columnalign`, `rowalign`, `columnspacing` and `rowspacing` from `mtable` which are non-standard
+  - uses CSS `padding-bottom` and `padding-right` for gap, `text-align` for align.
   - uses CSS (`border-right` and `border-bottom`) for augments
-- cases: uses `rowspacing`, `columnalign` from `mtable` which are non-standard
 - primes: uses CSS (`padding-left`)
 
 #pagebreak(weak: true)
