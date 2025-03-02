@@ -1,4 +1,4 @@
-#import "../src/lib.typ" as mathyml
+#import "../src/lib.typ" as mathyml: to-mathml
 // include the prelude for `bold`, `frak` etc.
 #import mathyml.prelude: *
 
@@ -19,7 +19,6 @@ html.elem("style")[
 
 #set text(size: 17pt)
 
-#let to-mathml = mathyml.maybe-html.with(mathyml.to-mathml)
 // convert equations manually, but only for html
 The fraction #to-mathml($1/3$) is not a decimal number. And we know
 #to-mathml($ a^2 + b^2 = c^2. $)
@@ -27,7 +26,7 @@ The fraction #to-mathml($1/3$) is not a decimal number. And we know
 
 // convert equations automatically, but only if we export to html.
 // If this panics, try `try-to-mathml` instead
-#show math.equation: mathyml.maybe-html.with(mathyml.to-mathml)
+#show math.equation: to-mathml
 
 To solve the cubic equation $t^3 + p t + q = 0$ (where the real numbers
 $p, q$ satisfy $4p^3 + 27q^2 > 0$) one can use Cardano's formula:

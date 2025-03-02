@@ -16,11 +16,14 @@
   /// The content to transform.
   /// -> content | any
   inner,
+  /// Controls if the transform function should be called even on paged targets (pdf, png etc.).
+  /// -> bool
+  force: false,
   /// Extra arguments to pass to @maybe-html.transform.
   /// -> arguments
   ..args
 ) = context {
-  if is-html() {
+  if force or is-html() {
     transform(inner, ..args)
   } else {
     inner
@@ -154,6 +157,8 @@
 
 /// Try to convert the inner body to MathML, but fallback to a svg frame on error.
 ///
+/// Note that for non-html targets, this function does nothing (you can change this with @try-to-mathml.force).
+///
 /// -> content
 #let try-to-mathml(
   /// The equation/ content to convert.
@@ -167,6 +172,9 @@
   /// Whether to consider warnings as errors.
   /// -> bool
   strict: false,
+  /// Whether to build an html tree even on paged targets (pdf, png etc.).
+  /// -> bool
+  force: false,
 ) = {
   let on-error(..args) = (_utils._err-tag: true, pos: args.pos()) + args.named()
   let on-warn = if strict {
@@ -175,25 +183,32 @@
     (..args) => ()
   }
   let is-error(item) = type(item) == dictionary and _utils._err-tag in item
-  let res = to-mathml-raw(
-    inner,
-    block: block,
-    on-error: on-error,
-    on-warn: on-warn,
-    is-error: is-error,
-  )
-  if is-error(res) {
-    // return repr(res) // FIXME fix all errors with this and `strict = true` above
-    html-framed(inner)
-  } else {
-    res
+
+  let run(inner) = {
+    let res = to-mathml-raw(
+      inner,
+      block: block,
+      on-error: on-error,
+      on-warn: on-warn,
+      is-error: is-error,
+    )
+    if is-error(res) {
+      // return repr(res) // FIXME fix all errors with this and `strict = true` above
+      html-framed(inner)
+    } else {
+      res
+    }
   }
+
+  maybe-html(run, inner, force: force)
 }
 
 /// Convert the inner body to MathML and panic on error.
 ///
 /// If you want to embed a svg-frame on error instead, use @try-to-mathml.
 /// If you want to handle errors yourself, use @to-mathml-raw.
+///
+/// Note that for non-html targets, this function does nothing (you can change this with @to-mathml.force).
 ///
 /// -> content
 #let to-mathml(
@@ -205,6 +220,9 @@
   /// If `block` is auto, it will be inferred from the input.
   /// -> bool | auto
   block: auto,
+  /// Whether to build an html tree even on paged targets (pdf, png etc.).
+  /// -> bool
+  force: false,
 ) = {
-  to-mathml-raw(inner, block: block)
+  maybe-html(to-mathml-raw.with(block: block), inner, force: force)
 }
