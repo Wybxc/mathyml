@@ -336,7 +336,9 @@
       #right
     ]
   }
-  return rec(inner.body) // FIXME: is this correct?
+  let w = _warn(ctx, "unreachable code in `lr` reached")
+  if _is-err(ctx, w) { return w }
+  return rec(inner.body)
 }
 
 #let _convert-mid(ctx, rec, inner) = {
