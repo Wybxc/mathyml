@@ -715,6 +715,9 @@
     if inner.delim.len() != 2 {
       return _err(ctx, "expected delim of length 2 but got", inner.delim, "in", inner)
     }
+    if inner.delim == (none, none) {
+      return table // don't create empty delimiters
+    }
     inner.delim
   } else {
     return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
