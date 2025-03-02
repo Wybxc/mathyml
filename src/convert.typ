@@ -949,19 +949,6 @@
   return rec
 }
 
-/// ==== Unsupported
-/// - `math.cancel`
-/// - nested alignment
-/// - labels
-///
-/// ==== Only available via prelude
-/// - variants: serif, sans, frak, mono, bb, cal
-/// - `math.styles`: upright, italic, bold
-/// - sizes: display, inline, script, sscript
-///
-/// ==== Papercuts
-/// - `vec` and `mat` align and gap only work in firefox.
-/// - `math.stretch`: only supports `op`s.
 #let _to-mathml(inner, ctx) = {
   let rec = _create-rec(ctx)
   let elem = html.elem
