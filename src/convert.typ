@@ -109,9 +109,7 @@
       let inner-ctx = ctx
       inner-ctx.allow-multi-return = true
       let next = inner.children.at(i + 1, default: none)
-      if next != none and unicode._is-space(next) {
-        inner-ctx.context_.before-space = true
-      }
+      inner-ctx.context_.before-space = next != none and unicode._is-space(next)
       inner-ctx.context_.after-space = after-space
       let r = rec(child, ctx: inner-ctx)
       if _is-err(ctx, r) { return r }
@@ -166,6 +164,11 @@
     html.elem("mn", styled)
   } else {
     let nbsp = sym.space.nobreak
+    // FIXME this breaks linebreaks in text
+    //       but fixes the math-align-weird test in chrome
+    if " " in styled {
+      styled = styled.replace(" ", nbsp)
+    }
     if ctx.context_.after-space {
       styled = nbsp + styled
     }
