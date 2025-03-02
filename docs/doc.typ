@@ -117,6 +117,7 @@ $
 = Missing/ non-working features<errors>
 The list below comes from own testing and typst's test suite.
 I've indicated the corresponding test names in parentheses.
+#link("https://akida.codeberg.page/mathyml")[Here] you can see the html output for the examples and tests.
 
 #let e-heading = heading.with(level: 2, outlined: false, numbering: none)
 

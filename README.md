@@ -48,5 +48,5 @@ $
 ```
 
 ## Missing/ non-working features
-<!--- TODO link to html output of testsuite -->
 You can find a list of all missing/ non-working features in the [manual](./docs/doc.pdf).
+[Here](https://akida.codeberg.page/mathyml) you can see the html output for the examples and tests.
