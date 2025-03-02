@@ -160,7 +160,7 @@
   }
   let styled = _apply-style(ctx, unstyled)
   // check if the text is a number
-  if unstyled.match(regex("^[\d\.]+$")) != none {
+  if unstyled.match(regex("^[\d\.,]+$")) != none {
     html.elem("mn", styled)
   } else {
     let nbsp = sym.space.nobreak
