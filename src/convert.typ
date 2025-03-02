@@ -905,6 +905,7 @@
   let attrs = (stretchy: "true")
   if inner.has("size") and inner.size != 100% + 0pt {
     attrs.insert("minsize", convert-relative-len(inner.size, inner))
+    // FIXME set maxsize as well?
   }
   let body = rec(inner.body)
   if _is-err(ctx, body) { return body }
@@ -1058,12 +1059,14 @@
   let rows = ()
   let columns = ()
   let elems = ()
+  let found-align = false // don't align the elements/ rows if no alignment point was used
   for (i, child) in inner.children.enumerate() {
     if type(child) == content {
       let func = child.func()
       if func == types.align-point {
         columns.push(elems.join())
         elems = ()
+        found-align = true
         continue
       }
       if func == linebreak {
@@ -1099,6 +1102,9 @@
     attrs: attrs,
     rows.map(row => {
       elem("mtr", row.enumerate().map(((i, v)) => {
+        if not found-align {
+          return elem("mtd", v)
+        }
         let class = if calc.rem(i, 2) == 0 {
           "mathyml-align-right"
         } else {
