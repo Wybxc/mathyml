@@ -65,27 +65,7 @@
 #let mathfonts() = html.elem("link", attrs: (rel: "stylesheet", href: "https://fred-wang.github.io/MathFonts/NewComputerModern/mathfonts.css"))
 
 #let stylesheets(include-fonts: true) = context if is-html() {
-  html.elem("style")[
-  #```CSS
-  .mathyml-block-center {
-    text-align: center;
-  }
-  .mathyml-inline-span {
-    /* font-size: 0pt; */
-    display: inline-block;
-  }
-  .mathyml-align-right {
-    text-align: right;
-    padding-left: 0em;
-    padding-right: 0em;
-  }
-  .mathyml-align-left {
-    text-align: left;
-    padding-left: 0em;
-    padding-right: 0em;
-  }
-  ```.text
-  ]
+  html.elem("style", (read("mathyml.css")))
 
   if include-fonts {
     mathfonts()
