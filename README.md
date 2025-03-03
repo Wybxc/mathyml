@@ -1,5 +1,5 @@
 # mathyml
-[mathyml](https://codeberg.org/akida/mathyml) converts your equations to MathML.
+[mathyml](https://codeberg.org/akida/mathyml) converts your equations to MathML so that they work well with HTML export.
 See the [manual](./docs/doc.pdf) for documentation.
 
 ## Overview

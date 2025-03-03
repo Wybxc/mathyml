@@ -70,7 +70,7 @@
 
 = Overview
 
-Mathyml converts your typst equations to MathML Core.
+Mathyml converts your typst equations to MathML Core so that they work well with HTML export.
 MathML Core is a language for describing mathematical notation and supported by major browsers (firefox and chrome).
 You can find an overview of MathML on #link("https://developer.mozilla.org/en-US/docs/Web/MathML")[mdn] and in the #link("https://www.w3.org/TR/mathml-core/")[specification].
 
