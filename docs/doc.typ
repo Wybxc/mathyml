@@ -158,6 +158,9 @@ I've indicated the corresponding test names in parentheses.
   - chrome: gap does not work (math-mat-gaps)
   - augment colors (math-mat-augment)
   - linebreaks are not discarded (math-mat-linebreaks)
+  - manual alignment does not work (math-mat-align)
+/ vec:
+  - manual alignment does not work (math-vec-align-explicit-alternating)
 / primes:
   chrome: they are really small (math-primes-attach)
 / sqrt:
