@@ -1,6 +1,10 @@
 #import "utils.typ" as utils: types, convert-relative-len, _err, _warn, _is-err
 #import "unicode.typ"
 
+#let _is-custom-type(inner) = {
+  inner.func() == metadata and type(inner.value) == dictionary and utils._type-ident in inner.value
+}
+
 #let _has-limits(ctx, base) = {
   let size = ctx.size
   if type(base) == content {
@@ -33,7 +37,7 @@
     } else if func2 == math.stretch {
       _has-limits(ctx, base.body)
     } else if func2 == metadata {
-      if type(base.value) == dictionary and utils._type-ident in base.value {
+      if _is-custom-type(base) {
         return _has-limits(ctx, base.value.body)
       }
       _has-limits(ctx, base.value)
@@ -213,6 +217,25 @@
   }
 }
 
+#let _convert-custom-type(ctx, rec, inner) = {
+  let ty = inner.at(utils._type-ident)
+  if ty == utils._dict-types.upright {
+    ctx.styles.upright-or-italic = "upright"
+    rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.italic {
+    ctx.styles.upright-or-italic = "italic"
+    rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.bold {
+    ctx.styles.bold = true
+    rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.variant {
+    ctx.styles.variant = inner.variant
+    rec(inner.body, ctx: ctx)
+  } else {
+    return _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
+  }
+}
+
 #let _convert-symbol(ctx, rec, outer, class: none) = {
   let elem = html.elem
   let inner = outer.text
@@ -267,6 +290,11 @@
       _create-mi(ctx, inner.text)
     } else if func == text {
       _create-mi(ctx, inner.text)
+    } else if _is-custom-type(inner) {
+      let inner-rec(inner, ctx: ctx) = {
+        _convert-op(ctx, rec, inner)
+      }
+      _convert-custom-type(ctx, inner-rec, inner.value)
     } else {
       return _err(ctx, "invalid content element of type `" + repr(func) + "`: " + repr(inner))
     }
@@ -956,25 +984,6 @@
   }
 }
 
-#let _convert-custom-type(ctx, rec, inner) = {
-  let ty = inner.at(utils._type-ident)
-  if ty == utils._dict-types.upright {
-    ctx.styles.upright-or-italic = "upright"
-    rec(inner.body, ctx: ctx)
-  } else if ty == utils._dict-types.italic {
-    ctx.styles.upright-or-italic = "italic"
-    rec(inner.body, ctx: ctx)
-  } else if ty == utils._dict-types.bold {
-    ctx.styles.bold = true
-    rec(inner.body, ctx: ctx)
-  } else if ty == utils._dict-types.variant {
-    ctx.styles.variant = inner.variant
-    rec(inner.body, ctx: ctx)
-  } else {
-    return _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
-  }
-}
-
 #let _create-rec(outer-ctx) = {
   let rec(inner, allow-multi-return: false, ctx: none, ..args) = {
     assert.eq(args.pos(), ())
@@ -1052,7 +1061,7 @@
     } else if func == types.context_ {
       inner // nothing we can do here
     } else if func == metadata {
-      if type(inner.value) == dictionary and utils._type-ident in inner.value {
+      if _is-custom-type(inner) {
         return _convert-custom-type(ctx, rec, inner.value)
       }
       inner
