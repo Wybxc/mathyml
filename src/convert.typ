@@ -812,7 +812,7 @@
   let elem = html.elem
   let row-gap = inner.at("gap", default: none)
 
-  let (left, right, align, reverse-align) = if inner.has("reverse") and inner.reverse {
+  let (left, right, align) = if inner.has("reverse") and inner.reverse {
     let delim = if not inner.has("delim") {
       "}"
     } else if inner.delim == none {
@@ -823,7 +823,7 @@
     } else {
       return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
     }
-    (none, delim, right, true)
+    (none, delim, right)
   } else {
     let delim = if not inner.has("delim") {
       "{"
@@ -835,7 +835,7 @@
     } else {
       return _err(ctx, "invalid `delim` " + inner.delim  + " in `vec`", inner)
     }
-    (delim, none, left, false)
+    (delim, none, left)
   }
 
   for child in inner.children {
@@ -846,7 +846,7 @@
           return (ctx.rec._convert-alignments)(
             ctx, rec, inner,
             row-gap: row-gap,
-            reverse-align: reverse-align,
+            alternate: false,
             left-delim: left,
             right-delim: right,
           )
@@ -1096,7 +1096,7 @@
   right-delim: none,
   row-gap: none,
   column-gap: none,
-  reverse-align: false,
+  alternate: true,
 ) = {
   let elem = html.elem
 
@@ -1146,18 +1146,14 @@
   } else {
     0
   }
-  let extra-class = if reverse-align {
-    (y, x) => if calc.rem(x, 2) == last-index-rem {
-      "mathyml-align-right"
-    } else {
-      "mathyml-align-left"
-    }
-  } else if found-align {
+  let extra-class = if found-align and alternate {
     (y, x) => if calc.rem(x, 2) == 0 {
       "mathyml-align-right"
     } else {
       "mathyml-align-left"
     }
+  } else if found-align {
+    (y, x) => "mathyml-align-left"
   } else {
     none
   }
