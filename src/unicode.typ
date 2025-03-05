@@ -22,7 +22,7 @@
   let italic = if italic == auto {
     (auto-italic
       and matches(regex("[a-zħıȷA-Zα-ω∂ϵϑϰϕϱϖ]"))
-      and variant == "sans" or variant == "serif")
+      and (variant == "sans" or variant == "serif"))
   } else {
     italic
   }
