@@ -62,13 +62,6 @@
   html.elem(elem, attrs: (class: default-class) + attrs, html.frame(content))
 }
 
-#let mathfonts() = html.elem("link", attrs: (rel: "stylesheet", href: "https://fred-wang.github.io/MathFonts/NewComputerModern/mathfonts.css"))
-
-#let stylesheets(include-fonts: true) = context if is-html() {
-  html.elem("style", (read("mathyml.css")))
-
-  if include-fonts {
-    mathfonts()
 #let _mathml-ignore(inner) = {
   if type(inner) == content and inner.func() == math.equation {
     let fields = inner.fields()
@@ -217,3 +210,119 @@
 ) = {
   maybe-html(to-mathml-raw.with(block: block), inner, force: force)
 }
+
+#let _include-mathfont-inner(font, trimmed: "") = {
+  let fonts = (
+    "asana": "Asana",
+    "cambria": "Cambria",
+    "tex gyre dejavu": "DejaVu",
+    "dejavu": "DejaVu",
+    "dejavu math tex gyre": "DejaVu",
+    "euler": "Euler",
+    "fira": "FiraMath",
+    "gfs neohellenic": "GFS_NeoHellenic",
+    "gnu free sans": "GNUFreeSans",
+    "free sans": "GNUFreeSans",
+    "gnu free serif": "GNUFreeSerif",
+    "free serif": "GNUFreeSerif",
+    "garamond": "Garamond",
+    "garamond-math": "Garamond",
+    "eb garamond": "Garamond",
+    "lmroman12": "LatinModern",
+    "latin modern": "LatinModern",
+    "lete sans": "LeteSansMath",
+    "libertinus serif": "Libertinus",
+    "libertinus": "Libertinus",
+    "lucida bright": "LucidaBright",
+    "minion": "Minion",
+    "new computer modern": "NewComputerModern",
+    "new computer modern10": "NewComputerModern",
+    "new computer modern sans": "NewComputerModernSans",
+    "noto sans": "NotoSans",
+    "ibmplexmath": "Plex",
+    "ibmplex": "Plex",
+    "ibmplexserif": "Plex",
+    "ibmplex serif": "Plex",
+    "stix two text": "STIX",
+    "stix two": "STIX",
+    "tex gyre bonum": "TeXGyreBonum",
+    "bonum": "TeXGyreBonum",
+    "bonum math tex gyre": "TeXGyreBonum",
+    "tex gyre pagella": "TeXGyrePagella",
+    "pagella": "TeXGyrePagella",
+    "pagella math tex gyre": "TeXGyrePagella",
+    "tex gyre schola": "TeXGyreSchola",
+    "schola": "TeXGyreSchola",
+    "schola math tex gyre": "TeXGyreSchola",
+    "tex gyre termes": "TeXGyreTermes",
+    "termes": "TeXGyreTermes",
+    "termes math tex gyre": "TeXGyreTermes",
+    "xits": "XITS",
+  )
+  let prefix = "https://fred-wang.github.io/MathFonts/"
+
+  let fontname = if font == auto {
+    let s = state("mathyml-font-detection", none)
+    return {
+      // switch to context in equation to get the font set for them
+      show math.equation: it => {
+        s.update(text.font)
+        it
+      }
+      context {
+        let font = s.final()
+        if font == none {
+          font == "NewComputerModern"
+        }
+        _include-mathfont-inner(font)
+      }
+      html.elem("div", attrs: (style: "display:none"), html.frame($$))
+    }
+  } else {
+    font = lower(font)
+    let found = false
+    for f in fonts.values() {
+      if font == lower(f) {
+        font = f
+        found = true
+      }
+    }
+    if found {
+    } else if font in fonts {
+      fonts.at(font)
+    } else {
+      if font.ends-with("math") {
+        return _include-mathfont-inner(font.trim(repeat: false, at: end, "math").trim(), trimmed: " math" + trimmed)
+      }
+      panic("unsupported font `" + font + trimmed + "`. See " + prefix + " for a list of supported fonts")
+    }
+  }
+  let href = prefix + fontname + "/mathfonts.css"
+  html.elem("link", attrs: (rel: "stylesheet", href: href))
+}
+
+/// Include a math font in the html document.
+///
+/// See https://github.com/fred-wang/MathFonts for a list of supported fonts.
+#let include-mathfont(
+  /// The name of the font to include.
+  /// -> auto | str
+  font: auto,
+) = {
+  _include-mathfont-inner(font)
+}
+
+/// Include the required/ recommended stylesheets.
+#let stylesheets(
+  /// Whether to include a math font in the html document.
+  /// See @include-mathfont
+  /// -> bool
+  include-fonts: true,
+) = context if is-html() {
+  html.elem("style", (read("mathyml.css")))
+
+  if include-fonts {
+    include-mathfont()
+  }
+}
+
