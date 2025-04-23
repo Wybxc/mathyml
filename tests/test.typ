@@ -191,6 +191,13 @@ $)
   &= x & & 1
 $)
 
+@ref-me:
+#figure(to-mathml[$a = b$])<ref-me>
+#test($
+  a =^#[@ref-me] b
+$)
+
+
 #[
   #show math.equation.where(block: true): to-mathml.with(block: true)
   #show math.equation.where(block: false): to-mathml.with(block: false)

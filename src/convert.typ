@@ -161,6 +161,22 @@
   return res
 }
 
+#let _create-mtext(ctx, text) = {
+  let nbsp = sym.space.nobreak
+  // FIXME this breaks linebreaks in text
+  //       but fixes the math-align-weird test in chrome
+  if type(text) == str and " " in text {
+    text = text.replace(" ", nbsp)
+  }
+  if ctx.context_.after-space {
+    text = nbsp + text
+  }
+  if ctx.context_.before-space {
+    text = text + nbsp
+  }
+  html.elem("mtext", text)
+}
+
 #let _convert-text(ctx, rec, inner) = {
   let unstyled = inner
   if type(inner) != str {
@@ -171,19 +187,7 @@
   if unstyled.match(regex("^[\d\.,]+$")) != none {
     html.elem("mn", styled)
   } else {
-    let nbsp = sym.space.nobreak
-    // FIXME this breaks linebreaks in text
-    //       but fixes the math-align-weird test in chrome
-    if " " in styled {
-      styled = styled.replace(" ", nbsp)
-    }
-    if ctx.context_.after-space {
-      styled = nbsp + styled
-    }
-    if ctx.context_.before-space {
-      styled = styled + nbsp
-    }
-    html.elem("mtext", styled)
+    _create-mtext(ctx, styled)
   }
 }
 
@@ -1078,6 +1082,8 @@
     } else if func == raw {
       // FIXME: improve this?
       _convert-text(ctx, rec, inner.text)
+    } else if func == ref {
+      _create-mtext(ctx, inner)
     } else {
       return _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }
