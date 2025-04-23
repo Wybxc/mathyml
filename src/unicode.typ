@@ -181,7 +181,7 @@
   str.from-unicode(start + (str.to-unicode(c) - str.to-unicode(base)))
 }
 
-/// see <https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-utils/src/lib.rs#L345>
+/// see https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-utils/src/lib.rs#L345
 /// for most unicode values only `large` and `relation` will be correct.
 #let _default-math-class(
   ctx,
@@ -255,7 +255,7 @@
 /// determine if the base has limits
 /// -> "never" | "display" | "always"
 ///
-/// see `https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L628`
+/// see https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L628
 #let _limits-for-char(ctx, c) = {
   let matches = _matches.with(c)
   let class = _default-math-class(ctx, c)
@@ -276,7 +276,7 @@
 /// The default limit configuration for a math class.
 /// -> "never" | "display" | "always"
 ///
-/// see `https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L643`
+/// see https://github.com/typst/typst/blob/d6b0d68ffa4963459f52f7d774080f1f128841d4/crates/typst-layout/src/math/fragment.rs#L643
 #let _limits_for_class(class) = {
   if class == "large" {
     "display"
