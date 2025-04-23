@@ -69,6 +69,17 @@
 
   if include-fonts {
     mathfonts()
+#let _mathml-ignore(inner) = {
+  if type(inner) == content and inner.func() == math.equation {
+    let fields = inner.fields()
+    let body = fields.remove("body")
+    let ignore = metadata((_utils._type-ident: _utils._dict-types.ignore, body: []))
+    math.equation(
+      [#ignore #body],
+      ..fields
+    )
+  } else {
+    inner
   }
 }
 

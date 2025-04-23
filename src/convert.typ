@@ -231,6 +231,8 @@
   } else if ty == utils._dict-types.variant {
     ctx.styles.variant = inner.variant
     rec(inner.body, ctx: ctx)
+  } else if ty == utils._dict-types.ignore {
+    return inner.body
   } else {
     return _err(ctx, "unknown custom element `" + ty + "`: " + repr(inner))
   }
@@ -1234,5 +1236,15 @@
       _convert-alignments: _convert-alignments,
     ),
   )
+  // ignore the equation if the first child is the ignore element
+  if type(body) == content and body.func() == types.sequence and body.children.len() > 0 {
+    let first = body.children.first()
+    if type(first) == content and _is-custom-type(first) {
+      let ty = first.value.at(utils._type-ident)
+      if ty == utils._dict-types.ignore {
+        return body
+      }
+    }
+  }
   _convert-maybe-aligned(body, ctx)
 }

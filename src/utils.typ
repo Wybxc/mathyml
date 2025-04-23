@@ -49,6 +49,7 @@
   italic: "italic",
   bold: "bold",
   variant: "variant",
+  ignore: "ignore",
 )
 #let _err-tag = "_mathyml-error"
 
