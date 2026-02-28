@@ -288,6 +288,7 @@
       }
     }
     if found {
+      font
     } else if font in fonts {
       fonts.at(font)
     } else {
