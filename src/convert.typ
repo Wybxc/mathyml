@@ -964,7 +964,7 @@
     none
   } else if c < 4 {
     let body = ("′", "″", "‴", "⁗").at(c - 1)
-    elem("mo", attrs: (lspace: "0em", rspace: "0em", style: "padding-left: 0.08em"), body)
+    elem("mo", attrs: (lspace: "0em", rspace: "0em", style: "padding-left: 0.08em;"), body)
   } else {
     elem("mrow", {
       for _ in range(c) {
@@ -987,6 +987,38 @@
   } else {
     // FIXME: support more
     return _err(ctx, "can't stretch", body)
+  }
+}
+
+#let _convert-scale(ctx, rec, inner) = {
+  let x = convert-relative-len(inner.x, inner)
+  let y = convert-relative-len(inner.y, inner)
+  if x != y {
+    // FIXME
+    return _err(ctx, "different scales in scale are not supported yet", x, y)
+  }
+  let body = rec(inner.body)
+  if _is-err(ctx, body) { return body }
+  if type(body) != content or body.func() != html.elem {
+    return _err(ctx, "can't scale", body)
+  }
+  if body.tag == "mo" {
+    let attrs = body.fields().at("attrs", default: (:))
+    attrs.insert("minsize", x)
+    attrs.insert("maxsize", x)
+    html.elem("mo", attrs: attrs, body.body)
+  } else if body.tag == "mtext" {
+    let attrs = body.fields().at("attrs", default: (:))
+    let style = "font-size: " + x + ";"
+    if "style" in attrs {
+      attrs.style += style
+    } else {
+      attrs.insert("style", style)
+    }
+    html.elem("mtext", attrs: attrs, body.body)
+  } else {
+    // FIXME: support more
+    return _err(ctx, "can't scale", body)
   }
 }
 
@@ -1084,6 +1116,8 @@
       _convert-text(ctx, rec, inner.text)
     } else if func == ref {
       _create-mtext(ctx, inner)
+    } else if func == scale {
+      _convert-scale(ctx, rec, inner)
     } else {
       return _err(ctx, "unknown content element of type `" + repr(func) + "`: " + repr(inner))
     }

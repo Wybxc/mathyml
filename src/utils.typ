@@ -18,7 +18,9 @@
       "calc(" + str(len.em) + "em + " + repr(len.abs) + ")" // FIXME does this work?
     }
   }
-  if len.ratio == 0% {
+  if type(len) == ratio {
+    repr(len)
+  } else if len.ratio == 0% {
     convert-relative-len(len.length, inner)
   } else if len.length == 0pt {
     repr(len.ratio)
